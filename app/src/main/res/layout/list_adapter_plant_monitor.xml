@@ -43,21 +43,21 @@
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceSmall"
             android:text="온도 : 25@C"
-            android:id="@+id/textView3" />
+            android:id="@+id/list_adp_monitor_text_temperature" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceSmall"
             android:text="습도 : 70%"
-            android:id="@+id/textView4" />
+            android:id="@+id/list_adp_monitor_text_humidity" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceSmall"
             android:text="밝기 : 어두움"
-            android:id="@+id/textView5" />
+            android:id="@+id/list_adp_monitor_text_lux" />
     </LinearLayout>
 
     <LinearLayout
@@ -71,25 +71,28 @@
             style="?android:attr/progressBarStyleHorizontal"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/progressBar2"
+            android:id="@+id/list_adp_monitor_progress_temperature"
             android:max="100"
-            android:progress="50" />
+            android:progress="50"
+            android:indeterminate="false" />
 
         <ProgressBar
             style="?android:attr/progressBarStyleHorizontal"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/progressBar"
+            android:id="@+id/list_adp_monitor_progress_humidity"
             android:max="100"
-            android:progress="25" />
+            android:progress="25"
+            android:indeterminate="false" />
 
         <ProgressBar
             style="?android:attr/progressBarStyleHorizontal"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/progressBar3"
+            android:id="@+id/list_adp_monitor_progress_lux"
             android:max="100"
-            android:progress="85" />
+            android:progress="85"
+            android:indeterminate="false" />
 
     </LinearLayout>
 
