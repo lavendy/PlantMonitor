@@ -25,6 +25,7 @@ public class PlantDBAdapter
     public static final String DEVICE_NAME = "device_name";     //디바이스 이름
     public static final String PLANT_NAME = "plant_name";       //식물 이름
     public static final String PLANT_NUM = "plant_num";         //식물 정보 번호
+    public static final String PLANT_IMG_NUM = "plant_img_num"; //이미지 번호
     public static final String PLANT_GOAL_TEMPERATURE = "goal_temperature"; // 온도 측정 목표
     public static final String PLANT_GOAL_HUMIDITY = "goal_humidity";       //습도 측정 목표
     public static final String PLANT_GOAL_LUX = "goal_lux";                 //조도 측정 목표
@@ -52,6 +53,7 @@ public class PlantDBAdapter
             DEVICE_NAME + " TEXT , " +
             PLANT_NUM + " INTEGER, " +
             PLANT_NAME + " TEXT , " +
+            PLANT_IMG_NUM + " INTEGER , " +
             PLANT_GOAL_TEMPERATURE + " INTEGER, " +
             PLANT_GOAL_HUMIDITY + " INTEGER, "+
             PLANT_GOAL_LUX + " INTEGER " + ")";
