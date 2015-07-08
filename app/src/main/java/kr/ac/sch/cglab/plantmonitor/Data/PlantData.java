@@ -7,22 +7,26 @@ import java.util.ArrayList;
 
 public class PlantData {
     public String mPlantName = "";
-    public String mPlantNum = "";
+    public int mPlantNum = -1;
     public int mImgNum = -1;
 
-    public ArrayList<MeasuredData> mDataList;   //ÃøÁ¤µÈ ¿Â½ÀÁ¶µµ µ¥ÀÌÅÍµé
+    public ArrayList<MeasuredData> mDataList;   //ì¸¡ì •ëœ ì˜¨ìŠµì¡°ë„ ë°ì´í„°ë“¤
 
     public int mGoalHumidity = 0;
-    public int mGoalTemperature = 0;
-    public int mGoalLux = 0;
+    public int mGoalTemperatureMin = 0;
+    public int mGoalTemperatureMax = 0;
+    public int mGoalLuxMin = 0;
+    public int mGoalLuxMax = 0;
 
     public int mLastedHumidity = 0;
     public int mLastedTemperature = 0;
     public int mLastedLux = 0;
 
+    public boolean mIsConnected = false;
+
     public BluetoothDevice mDevice;
 
-    public ContentValues mContentValue; //µğºñ ÀúÀå ¿ëµµ
+    public ContentValues mContentValue; //ë””ë¹„ ì €ì¥ ìš©ë„
 
     public String getDeviceName()
     {
@@ -38,13 +42,14 @@ public class PlantData {
         mContentValue = new ContentValues();
         mContentValue.put(PlantDBAdapter.DEVICE_NAME, this.getDeviceName()); //device name
         mContentValue.put(PlantDBAdapter.DEVICE_ADDRESS, this.getDeviceMacAddress());    //device mac address
-        mContentValue.put(PlantDBAdapter.PLANT_NAME, this.mPlantName);       //ÀÌ¸§
-        mContentValue.put(PlantDBAdapter.PLANT_NUM, this.mPlantNum);         //½Ä¹° ÀÎ½Ä ¹øÈ£
-        mContentValue.put(PlantDBAdapter.PLANT_IMG_NUM, this.mImgNum);      //ÀÌ¹ÌÁö ½Äº° ¹øÈ£
-        mContentValue.put(PlantDBAdapter.PLANT_GOAL_HUMIDITY, this.mGoalHumidity);   // ¸ñÇ¥ ½Àµµ
-        mContentValue.put(PlantDBAdapter.PLANT_GOAL_TEMPERATURE, this.mGoalTemperature); //¸ñÇ¥ ¿Âµµ
-        mContentValue.put(PlantDBAdapter.PLANT_GOAL_LUX, this.mGoalLux); //¸ñÇ¥ Á¶µµ
-
+        mContentValue.put(PlantDBAdapter.PLANT_NAME, this.mPlantName);       //ì´ë¦„
+        mContentValue.put(PlantDBAdapter.PLANT_NUM, this.mPlantNum);         //ì‹ë¬¼ ì¸ì‹ ë²ˆí˜¸
+        mContentValue.put(PlantDBAdapter.PLANT_IMG_NUM, this.mImgNum);      //ì´ë¯¸ì§€ ì‹ë³„ ë²ˆí˜¸
+        mContentValue.put(PlantDBAdapter.PLANT_GOAL_HUMIDITY, this.mGoalHumidity);   // ëª©í‘œ ìŠµë„
+        mContentValue.put(PlantDBAdapter.PLANT_GOAL_TEMPERATURE_MIN, this.mGoalTemperatureMin); //ëª©í‘œ ì˜¨ë„
+        mContentValue.put(PlantDBAdapter.PLANT_GOAL_TEMPERATURE_MIN, this.mGoalTemperatureMax); //ëª©í‘œ ì˜¨ë„
+        mContentValue.put(PlantDBAdapter.PLANT_GOAL_LUX_MIN, this.mGoalLuxMin); //ëª©í‘œ ì¡°ë„
+        mContentValue.put(PlantDBAdapter.PLANT_GOAL_LUX_MAX, this.mGoalLuxMax); //ëª©í‘œ ì¡°ë„
 
         return mContentValue;
     }

@@ -2,13 +2,18 @@ package kr.ac.sch.cglab.plantmonitor;
 
 import android.content.ClipData;
 import android.content.Context;
+import android.graphics.Color;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.service.carrier.MessagePdu;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import java.util.List;
@@ -16,6 +21,7 @@ import java.util.List;
 import javax.net.ssl.ManagerFactoryParameters;
 
 import kr.ac.sch.cglab.plantmonitor.Data.FileManager;
+import kr.ac.sch.cglab.plantmonitor.Data.PlantDBAdapter;
 import kr.ac.sch.cglab.plantmonitor.Data.PlantData;
 import kr.ac.sch.cglab.plantmonitor.Data.PlantsDataManager;
 
@@ -23,6 +29,8 @@ import kr.ac.sch.cglab.plantmonitor.Data.PlantsDataManager;
  * Created by wind_ on 2015-07-03.
  */
 public class ListAdapterPlantList extends ArrayAdapter<PlantData>{
+
+
 
     public ListAdapterPlantList(Context context, int textViewResourceID)
     {
@@ -47,29 +55,69 @@ public class ListAdapterPlantList extends ArrayAdapter<PlantData>{
 
         if(pData != null)
         {
-            //ÆÄÀÏ¿¡¼­ ÀÌ¹ÌÁö ·Îµå ¾ÆÀÌÄÜ ÁöÁ¤
+            //íŒŒì¼ì—ì„œ ì´ë¯¸ì§€ ë¡œë“œ ì•„ì´ì½˜ ì§€ì •
             ImageView plantImgIcon = (ImageView) v.findViewById(R.id.list_adp_monitor_img_view_plant);
-            plantImgIcon.setImageBitmap(FileManager.getImgFromFile(PlantsDataManager.getPlantImgNum(position)));
+            //plantImgIcon.setImageBitmap(FileManager.getImgFromFile(PlantsDataManager.getPlantImgNum(position)));
 
-            //½Ä¹° Á¤º¸ Ç¥½Ã
+            //ì‹ë¬¼ ì´ë¦„  í‘œì‹œ
             TextView txtName = (TextView) v.findViewById(R.id.list_adp_monitor_text_plant_name);
             txtName.setText( PlantsDataManager.getPlantName(position) );
-            
+
+            //ì‹ë¬¼ ìƒíƒœ í‘œì‹œ
             TextView txtStatus = (TextView) v.findViewById(R.id.list_adp_monitor_text_plant_status);
             txtStatus.setText(PlantsDataManager.getPlantStatus(position));
+            txtStatus.setSelected(true);
+            txtStatus.setEllipsize(TextUtils.TruncateAt.MARQUEE);   //ì „ê´‘íŒ íš¨ê³¼ í˜ëŸ¬ê°€ëŠ” íš¨ê³¼
+            txtStatus.setMarqueeRepeatLimit(-1);    // repeats indefinitely
 
-            //¿Âµµ ½Àµµ Á¶µµ Ç¥½Ã
+
+            //ì˜¨ë„ ìŠµë„ ì¡°ë„ í‘œì‹œ
             TextView txtHumidity = (TextView) v.findViewById(R.id.list_adp_monitor_text_humidity);
-            txtHumidity.setText( PlantsDataManager.getPlantHumidityInfo(position));
+            txtHumidity.setText(PlantsDataManager.getPlantHumidityStr(position));
 
             TextView txtTemperature = (TextView) v.findViewById(R.id.list_adp_monitor_text_temperature);
-            txtTemperature.setText( PlantsDataManager.getPlantTemperatrueInfo(position));
+            txtTemperature.setText(PlantsDataManager.getPlantTemperatureStr(position));
 
             TextView txtLux = (TextView) v.findViewById(R.id.list_adp_monitor_text_lux);
-            txtLux.setText(PlantsDataManager.getPlantLuxInfo(position));
+            txtLux.setText(PlantsDataManager.getPlantLuxStr(position));
 
-            //ÇÁ·Î±×·¡½º¹Ù Ç¥½Ã
+            //í”„ë¡œê·¸ë˜ìŠ¤ë°” í‘œì‹œ
+            ProgressBar pbHumidity = (ProgressBar) v.findViewById(R.id.list_adp_monitor_progress_humidity);
+            pbHumidity.setProgress(PlantsDataManager.getPlantHumidity(position));
+            setProgressBarColor(pbHumidity, PlantsDataManager.INFO_TYPE.HUMIDITY, position);    //ìƒíƒœ ì–»ì–´ì„œ í”„ë¡œê·¸ë ˆìŠ¤ë°” ìƒ‰í‘œì‹œ
+
+            ProgressBar pbTemperature = (ProgressBar) v.findViewById(R.id.list_adp_monitor_progress_temperature);
+            pbTemperature.setProgress( PlantsDataManager.getPlantTemperature(position) );
+            setProgressBarColor(pbTemperature, PlantsDataManager.INFO_TYPE.TEMPERATURE, position);
+
+            ProgressBar pbLux= (ProgressBar) v.findViewById(R.id.list_adp_monitor_progress_lux);
+            pbLux.setProgress( PlantsDataManager.getPlantLux(position));
+            setProgressBarColor(pbLux, PlantsDataManager.INFO_TYPE.LUX, position);
+
         }
         return v;
+    }
+
+    private void setProgressBarColor(ProgressBar pb, PlantsDataManager.INFO_TYPE type, int position)
+    {
+        if(type == PlantsDataManager.INFO_TYPE.HUMIDITY)
+            SetPBColor(pb, PlantsDataManager.checkHumidity(position));
+        else if(type == PlantsDataManager.INFO_TYPE.TEMPERATURE)
+            SetPBColor(pb, PlantsDataManager.checkTemperature(position));
+        else if(type == PlantsDataManager.INFO_TYPE.LUX)
+            SetPBColor(pb, PlantsDataManager.checkLux(position));
+    }
+    private void SetPBColor(ProgressBar bar, PlantsDataManager.PROPERTIES_STATUS status)
+    {
+        //low íŒŒë‘ //normal ì´ˆë¡ //high ë¹¨ê°•
+        int color = Color.BLACK;
+        if(status == PlantsDataManager.PROPERTIES_STATUS.LOW)
+            color = Color.BLUE;
+        else if(status == PlantsDataManager.PROPERTIES_STATUS.NORMAL)
+            color = Color.GREEN;
+        else if(status == PlantsDataManager.PROPERTIES_STATUS.HIGH)
+            color = Color.RED;
+
+        bar.getProgressDrawable().setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
     }
 }

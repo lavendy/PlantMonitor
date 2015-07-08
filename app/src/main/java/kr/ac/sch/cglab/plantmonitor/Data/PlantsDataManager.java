@@ -1,12 +1,13 @@
 package kr.ac.sch.cglab.plantmonitor.Data;
 
+import java.security.Policy;
 import java.util.ArrayList;
 
 
 public class PlantsDataManager
 {
-    private enum INFO_TYPE { HUMIDITY,TEMPERATURE, LUX};
-
+    public static enum INFO_TYPE { HUMIDITY,TEMPERATURE, LUX};
+    public static enum PROPERTIES_STATUS {LOW, NORMAL, HIGH };
 
     public static String mUUID;
     public static ArrayList<PlantData> mPlantsList = new ArrayList<>();
@@ -19,13 +20,78 @@ public class PlantsDataManager
     public static String getPlantStatus(int num) {
         PlantData data = mPlantsList.get(num);
 
-        //¼öÁ¤ ÇÒ°Í
-        //»óÅÂ ÀĞ¾î¼­ ¸ñÇ¥Ä¡¿¡ µµ´Ş ¸øÇÏ¸é Á¤¸®ÇØ¼­ ¹®ÀÚ¿­·Î ¸®ÅÏ ÇÒ°É
-        //»óÅÂ ÃøÁ¤ ÇÒ°Í!
-        String str = "¾çÈ£";
+        //ìˆ˜ì • í• ê²ƒ
+        String str = "ë””ë°”ì´ìŠ¤ë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŒ";
 
+        if(data.mIsConnected == false)   //ë””ë°”ì´ìŠ¤ê°€ ì—°ê²° ë˜ì–´ ìˆë‹¤ë©´ í˜¹ì€ ê·¼ì²˜ì— ì¡´ì¬
+        {
+            str = "í† ì–‘ ìŠµë„ : ";
+            //ìƒíƒœ ì½ì–´ì„œ ëª©í‘œì¹˜ì— ë„ë‹¬ ëª»í•˜ë©´ ì •ë¦¬í•´ì„œ ë¬¸ìì—´ë¡œ ë¦¬í„´ í• ê±¸
+            //ìƒíƒœ ì¸¡ì • í• ê²ƒ!
+            PROPERTIES_STATUS status = checkHumidity(num);
+            if(status == PROPERTIES_STATUS.LOW)
+                str += "ë¬¼ì´ ë¶€ì¡± |";
+            else if(status == PROPERTIES_STATUS.NORMAL)
+                str += "ì–‘í˜¸ |";
+            else
+                str += "ë„ˆë¬´ ìŠµí•¨ |";
+
+            status = checkTemperature(num);
+            str += " ì˜¨ë„ : ";
+            if(status == PROPERTIES_STATUS.LOW)
+                str += "ì¶”ì›€ |";
+            else if(status == PROPERTIES_STATUS.NORMAL)
+                str += "ì ë‹¹í•¨ |";
+            else
+                str += "ë”ì›€ |";
+
+            status = checkLux(num);
+            str += " ë°ê¸° : ";
+            if(status == PROPERTIES_STATUS.LOW)
+                str += "ë„ˆë¬´ ì–´ë‘ì›€";
+            else if(status == PROPERTIES_STATUS.NORMAL)
+                str += "ì–‘í˜¸";
+            else
+                str += "ë„ˆë¬´ ë°ìŒ";
+
+            str += "..";
+        }
         return str;
     }
+
+
+    public static PROPERTIES_STATUS checkTemperature(int pos)
+    {
+        //ì˜¨ë„ í‰ê°€
+        PlantData data = mPlantsList.get(pos);
+        if(data.mLastedTemperature < data.mGoalTemperatureMin)
+            return PROPERTIES_STATUS.LOW;
+        else if(data.mGoalTemperatureMin <= data.mLastedTemperature && data.mLastedTemperature < data.mGoalTemperatureMax)
+            return PROPERTIES_STATUS.NORMAL;
+        else
+            return PROPERTIES_STATUS.HIGH;
+    }
+    public static PROPERTIES_STATUS checkHumidity(int pos)
+    {
+        PlantData data = mPlantsList.get(pos);
+        if(data.mLastedHumidity < data.mGoalHumidity - 10)  //+=10% ì´ë‚´ë¡œ ì¸¡ì •
+            return PROPERTIES_STATUS.LOW;
+        else if(data.mGoalHumidity - 10 <= data.mLastedHumidity && data.mLastedHumidity < data.mGoalHumidity + 10)
+            return PROPERTIES_STATUS.NORMAL;
+        else
+            return PROPERTIES_STATUS.HIGH;
+    }
+    public static PROPERTIES_STATUS checkLux(int pos)
+    {
+        PlantData data = mPlantsList.get(pos);
+        if(data.mLastedLux < data.mGoalLuxMin)
+            return PROPERTIES_STATUS.LOW;
+        else if(data.mGoalLuxMin <= data.mLastedLux && data.mLastedLux < data.mGoalLuxMax)
+            return PROPERTIES_STATUS.NORMAL;
+        else
+            return PROPERTIES_STATUS.HIGH;
+    }
+
 
     public static String getPlantName(int num)
     {
@@ -39,27 +105,27 @@ public class PlantsDataManager
         return data.mImgNum;
     }
 
-    public static String getPlantHumidityInfo(int num)
+
+    public static String getPlantHumidityStr(int num)
     {
-        //¸¶Áö¸· ÃøÁ¤µÈ ½Àµµ Á¤º¸ °¡Á®¿À±â
+        //ë§ˆì§€ë§‰ ì¸¡ì •ëœ ìŠµë„ ì •ë³´ ê°€ì ¸ì˜¤ê¸°
         String str = getInfoString(num, INFO_TYPE.HUMIDITY);
         return str;
     }
 
-    public static String getPlantTemperatrueInfo(int num)
+    public static String getPlantTemperatureStr(int num)
     {
-        //¸¶Áö¸· ÃøÁ¤µÈ ¿Âµµ Á¤º¸ °¡Á®¿À±â
+        //ë§ˆì§€ë§‰ ì¸¡ì •ëœ ì˜¨ë„ ì •ë³´ ê°€ì ¸ì˜¤ê¸°
         String str = getInfoString(num, INFO_TYPE.TEMPERATURE);
         return str;
     }
 
-    public static String getPlantLuxInfo(int num)
+    public static String getPlantLuxStr(int num)
     {
-        //¸¶Áö¸· ÃøÁ¤µÈ Á¶µµ Á¤º¸ °¡Á®¿À±â
+        //ë§ˆì§€ë§‰ ì¸¡ì •ëœ ì¡°ë„ ì •ë³´ ê°€ì ¸ì˜¤ê¸°
         String str = getInfoString(num, INFO_TYPE.LUX);
         return str;
     }
-
 
 
     private static String getInfoString(int num, INFO_TYPE type)
@@ -73,18 +139,58 @@ public class PlantsDataManager
 
         if(type == INFO_TYPE.HUMIDITY)
         {
-            str = "½Àµµ : " + humidity + "%";
+            str = "ìŠµë„ : " + humidity + " %";
         }
         else if(type == INFO_TYPE.TEMPERATURE)
         {
-            str = "¿Âµµ : " + temperature + "'C";
+            str = "ì˜¨ë„ : " + temperature + "'C";
         }
         else if(type == INFO_TYPE.LUX)
         {
-            str = "Á¶µµ : " + lux + "Lux";
+            PROPERTIES_STATUS sts = checkLux(num);
+            if(sts == PROPERTIES_STATUS.LOW)
+                str = "ë°ê¸° : ì–´ë‘ì›€";
+            else if(sts == PROPERTIES_STATUS.NORMAL)
+                str = "ë°ê¸° : ì•Œë§ìŒ";
+            else
+                str = "ë°ê¸° : ë„ˆë¬´ë°ìŒ";
+            //str = "ì¡°ë„ : " + lux / 100 + "kLux";
         }
         return str;
     }
 
+    public static boolean isConnected(int num)
+    {
+        return mPlantsList.get(num).mIsConnected;
+    }
 
+    public static int getPlantHumidity(int pos)
+    {
+        return mPlantsList.get(pos).mLastedHumidity;
+    }
+
+    public static int getPlantTemperature(int pos)
+    {
+        return mPlantsList.get(pos).mLastedTemperature;
+    }
+
+    public static int getPlantLux(int pos)
+    {
+        return mPlantsList.get(pos).mLastedLux;
+    }
+
+    public static int getPlantGoalHumidity(int pos)
+    {
+        return mPlantsList.get(pos).mGoalHumidity;
+    }
+
+    public static int getPlantGoalTemperature(int pos)
+    {
+        return mPlantsList.get(pos).mGoalTemperatureMin;
+    }
+
+    public static int getPlantGoalLux(int pos)
+    {
+        return mPlantsList.get(pos).mGoalLuxMin;
+    }
 }

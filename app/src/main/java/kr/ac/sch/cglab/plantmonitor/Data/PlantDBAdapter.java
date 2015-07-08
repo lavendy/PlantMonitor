@@ -26,9 +26,11 @@ public class PlantDBAdapter
     public static final String PLANT_NAME = "plant_name";       //식물 이름
     public static final String PLANT_NUM = "plant_num";         //식물 정보 번호
     public static final String PLANT_IMG_NUM = "plant_img_num"; //이미지 번호
-    public static final String PLANT_GOAL_TEMPERATURE = "goal_temperature"; // 온도 측정 목표
+    public static final String PLANT_GOAL_TEMPERATURE_MIN = "goal_temperature_min"; // 온도 측정 목표
+    public static final String PLANT_GOAL_TEMPERATURE_MAX = "goal_temperature_max";
     public static final String PLANT_GOAL_HUMIDITY = "goal_humidity";       //습도 측정 목표
-    public static final String PLANT_GOAL_LUX = "goal_lux";                 //조도 측정 목표
+    public static final String PLANT_GOAL_LUX_MIN = "goal_lux_min";                 //조도 측정 목표
+    public static final String PLANT_GOAL_LUX_MAX = "goal_lux_max";
 
     public static final String DATABASE_TABLE_MEASURED_DATA = "measured_data";
     //측정 데이터 테이블
@@ -54,9 +56,11 @@ public class PlantDBAdapter
             PLANT_NUM + " INTEGER, " +
             PLANT_NAME + " TEXT , " +
             PLANT_IMG_NUM + " INTEGER , " +
-            PLANT_GOAL_TEMPERATURE + " INTEGER, " +
+            PLANT_GOAL_TEMPERATURE_MIN + " INTEGER, " +
+            PLANT_GOAL_TEMPERATURE_MAX + " INTEGER, " +
             PLANT_GOAL_HUMIDITY + " INTEGER, "+
-            PLANT_GOAL_LUX + " INTEGER " + ")";
+            PLANT_GOAL_LUX_MIN + " INTEGER " +
+            PLANT_GOAL_LUX_MAX + " INTEGER " + ")";
 
     private static final String TABLE_CREATE_MEASURED_DATA = "CREATE TABLE "+
             DATABASE_TABLE_MEASURED_DATA + "(" +
