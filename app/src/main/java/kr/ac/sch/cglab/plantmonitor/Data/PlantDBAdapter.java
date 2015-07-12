@@ -2,6 +2,7 @@ package kr.ac.sch.cglab.plantmonitor.Data;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
@@ -71,7 +72,8 @@ public class PlantDBAdapter
             PLANT_MEASURED_HUMIDITY + "INTEGER, " +
             PLANT_MEASURED_LUX + " INTEGER " + ")";
 
-    private SQLiteDatabase mDB;
+    private SQLiteDatabase mDBWriter;
+    private SQLiteDatabase mDBReader;
     private DatabaseHelper mDBHelper;
     private Context mContext = null;
 
@@ -84,7 +86,8 @@ public class PlantDBAdapter
     public PlantDBAdapter open() throws SQLException
     {
         mDBHelper = new DatabaseHelper(this.mContext);
-        this.mDB = mDBHelper.getWritableDatabase();
+        this.mDBWriter = mDBHelper.getWritableDatabase();
+        this.mDBReader = mDBHelper.getReadableDatabase();
         return this;
     }
 
@@ -96,17 +99,45 @@ public class PlantDBAdapter
     //uuid 디바이스 개수, 마지막 업데이트 시간 저장
     public long createPhoneInfo(String uuid, int count, String time)
     {
+        //데이터가 존재 하면 건너 뜀
+        Cursor c = mDBReader.query(DATABASE_TABLE_PHONE_INFO, null,null,null,null,null,null );
+        if(c.getCount() >= 1)
+            return 0;
+
         ContentValues initValues = new ContentValues();
         initValues.put(PHONE_UUID, uuid);
         initValues.put(DEVICE_NUMBER, count);
         initValues.put(UPDATE_TIME, time);
-        return mDB.insert(DATABASE_TABLE_PHONE_INFO, null, initValues);
+        return mDBWriter.insert(DATABASE_TABLE_PHONE_INFO, null, initValues);
     }
+    public String getPhoneInfo()
+    {
+        String str = "";
+        Cursor c = mDBReader.query(DATABASE_TABLE_PHONE_INFO, null,null,null,null,null,null );
+        if(c.getCount() == 0)
+            return "phone_info has no data";
+        else
+        {
+            c.moveToFirst();
+            for (int i = 1; i < c.getColumnCount(); ++i)
+                str = str.concat(c.getString(i) + " ");
+        }
+        return str;
+    }
+
+    public long updateLastUpdatedTime(String time)
+    {
+        ContentValues updateValues = new ContentValues();
+        updateValues.put(UPDATE_TIME, time);
+        return mDBWriter.update(DATABASE_TABLE_PHONE_INFO, updateValues, "_id = 1", null);
+    }
+
+
     public long createNewPlant(PlantData plantData)
     {
         //디바이스 추가
         ContentValues initValues = plantData.getContentValue();     //디비용으로 저장된 디바이스 데이터
-        return mDB.insert(DATABASE_TABLE_MONITOR_DEVICE_INFO, null, initValues);
+        return mDBWriter.insert(DATABASE_TABLE_MONITOR_DEVICE_INFO, null, initValues);
     }
     public long createNewData(PlantData plantData)
     {
@@ -120,7 +151,7 @@ public class PlantDBAdapter
             initValues.put(PLANT_MEASURED_HUMIDITY, data.mHumidity);
             initValues.put(PLANT_MEASURED_TEMPERATURE, data.mTemperature);
             initValues.put(PLANT_MEASURED_LUX, data.mLux);
-            rs = mDB.insert(DATABASE_TABLE_MEASURED_DATA, null, initValues);
+            rs = mDBWriter.insert(DATABASE_TABLE_MEASURED_DATA, null, initValues);
             if(rs == -1)
                 return  -1;
         }
@@ -128,31 +159,26 @@ public class PlantDBAdapter
     }
 
 
-    public long updateLastUpdatedTime(String time)
-    {
-        ContentValues updateValues = new ContentValues();
-        updateValues.put(UPDATE_TIME, time);
-        return mDB.update(DATABASE_TABLE_PHONE_INFO, updateValues, "_id = 1", null);
-    }
+
     public long updatePlantInfo(PlantData plantData)
     {
         ContentValues updateValues = plantData.getContentValue();   //디비용으로 저장된 디바이스 데이터
-        return mDB.update(DATABASE_TABLE_MONITOR_DEVICE_INFO,       //db 내용중 식물 넘버랑 같은게 있으면 업데이트
+        return mDBWriter.update(DATABASE_TABLE_MONITOR_DEVICE_INFO,       //db 내용중 식물 넘버랑 같은게 있으면 업데이트
                 updateValues, PLANT_NUM + " = " + plantData.mPlantNum, null); //plant_num = 10
     }
 
 
     public long deletePhoneInfo(long rowID){
-        return mDB.delete(DATABASE_TABLE_PHONE_INFO, null, null);   //전체 삭제
+        return mDBWriter.delete(DATABASE_TABLE_PHONE_INFO, null, null);   //전체 삭제
     }
     public long deletePlantInfo(PlantData plantData)
     {
-        return mDB.delete(DATABASE_TABLE_MONITOR_DEVICE_INFO, PLANT_NUM + " = " + plantData.mPlantNum, null) ;
+        return mDBWriter.delete(DATABASE_TABLE_MONITOR_DEVICE_INFO, PLANT_NUM + " = " + plantData.mPlantNum, null) ;
     }
     public long deleteMesasuredData(String time, int plantNum)
     {
         //측정 시간과 식물 넘버로 검색
-        return mDB.delete(DATABASE_TABLE_MEASURED_DATA, PLANT_NUM + " = " + plantNum + " and " + PLANT_MEASURED_TIME + " = " + time, null);
+        return mDBWriter.delete(DATABASE_TABLE_MEASURED_DATA, PLANT_NUM + " = " + plantNum + " and " + PLANT_MEASURED_TIME + " = " + time, null);
     }
 
 
