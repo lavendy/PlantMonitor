@@ -1,4 +1,4 @@
-package kr.ac.sch.cglab.plantmonitor.Data;
+package kr.ac.sch.cglab.plantmonitor.BLE;
 
 import android.text.TextUtils;
 import android.util.Log;

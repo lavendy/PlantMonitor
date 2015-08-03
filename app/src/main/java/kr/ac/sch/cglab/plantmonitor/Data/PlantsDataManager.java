@@ -1,6 +1,5 @@
 package kr.ac.sch.cglab.plantmonitor.Data;
 
-import java.security.Policy;
 import java.util.ArrayList;
 
 

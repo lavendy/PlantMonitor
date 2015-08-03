@@ -2,23 +2,16 @@ package kr.ac.sch.cglab.plantmonitor;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Handler;
-import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ListView;
 
-import java.io.PrintStream;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import kr.ac.sch.cglab.plantmonitor.Data.PhoneInfoManager;
@@ -159,7 +152,6 @@ public class MainActivity extends Activity implements View.OnTouchListener, Adap
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id)
     {
-
     }
 
 

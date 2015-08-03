@@ -4,7 +4,11 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
+import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattDescriptor;
+import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
+import android.bluetooth.BluetoothProfile;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Handler;
@@ -19,15 +23,19 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.UUID;
 
-import kr.ac.sch.cglab.plantmonitor.Data.BluetoothLEHelpUtil;
+import kr.ac.sch.cglab.plantmonitor.BLE.GattAttributes;
 import kr.ac.sch.cglab.plantmonitor.R;
+
 
 public class AddPlantActivity extends ActionBarActivity implements AdapterView.OnItemClickListener, View.OnTouchListener {
 
@@ -50,6 +58,17 @@ public class AddPlantActivity extends ActionBarActivity implements AdapterView.O
     private ProgressBar mP0ProgressBarScanStatus;
     private ListAdapterScanDevice mP0DeviceListAdapter;
 
+    //p1
+    private ImageButton mP1ImgBtnSelectPlant;
+    private EditText mP1EditTextDeviceName;
+    private EditText mP1EditTextPlantName;
+    private EditText mP1EditTextCurrTemperature;
+    private EditText mP1EditTextCurrHumidity;
+    private EditText mP1EditTextCurrLux;
+    private Button mP1BtnConfirm;
+
+    private ScannedBluetoothDevice mSelectDevice; //선택된 블루투스 디바이스 임시 저장
+
     //스캔된 ble 디바이스 보관
     private ArrayList<ScannedBluetoothDevice> mScannedDeviceList;
 
@@ -59,7 +78,11 @@ public class AddPlantActivity extends ActionBarActivity implements AdapterView.O
     private BluetoothGatt mBleGatt;
     //private BluetoothGattCallback mBleGattCallback; 밑에서 정의해줌
     private Handler mHandler;
-    boolean mIsScanning = false;
+    private boolean mIsScanning = false;
+
+    private int mBleStatus;
+
+    private BluetoothGattCharacteristic ch;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,14 +99,26 @@ public class AddPlantActivity extends ActionBarActivity implements AdapterView.O
         this.mViewPager = (ViewPager) this.mViewGroup.findViewById(R.id.activity_add_plant_viewpager_pages);
         this.mViewPager.setAdapter(new ViewPagerAdapterAddPlant(this.mPageViews, this));
 
-        //init reference
+        //디바이스 리스트
+        this.mScannedDeviceList = new ArrayList<ScannedBluetoothDevice>();
+
+        InitGUI();
+
+        setContentView(this.mViewGroup);
+
+        InitBle();
+    }
+
+    private void InitGUI()
+    {
+        //우측 상단 종료 버튼
+        this.mViewGroup.findViewById(R.id.activity_add_plant_viewpager_btn_exit).setOnTouchListener(this);
+
+        //init reference p0
         this.mP0ListViewDeviceList      = (ListView)    this.mPageViews.get(VIEW_PAGE_P1).findViewById(R.id.activity_add_plant_p0_listView_searched);
         this.mP0BtnScanDevice           = (Button)      this.mPageViews.get(VIEW_PAGE_P1).findViewById(R.id.activity_add_plant_p0_btn_search_device);
         this.mP0TextViewStatus          = (TextView)    this.mPageViews.get(VIEW_PAGE_P1).findViewById(R.id.activity_add_plant_p0_textView_status);
         this.mP0ProgressBarScanStatus   = (ProgressBar) this.mPageViews.get(VIEW_PAGE_P1).findViewById(R.id.activity_add_plant_p0_progressBar_search);
-
-        //디바이스 리스트
-        this.mScannedDeviceList = new ArrayList<ScannedBluetoothDevice>();
 
         //p0 ui 초기화
         this.mP0DeviceListAdapter = new ListAdapterScanDevice(this, R.layout.list_adapter_new_device, this.mScannedDeviceList);
@@ -91,13 +126,20 @@ public class AddPlantActivity extends ActionBarActivity implements AdapterView.O
         this.mP0ListViewDeviceList.setOnItemClickListener(this);
         this.mP0BtnScanDevice.setOnTouchListener(this);
 
+        //page2
+        this.mP1ImgBtnSelectPlant       = (ImageButton) this.mPageViews.get(VIEW_PAGE_P2).findViewById(R.id.activity_add_plant_p1_btn_add_plant);
+        this.mP1EditTextDeviceName      = (EditText)    this.mPageViews.get(VIEW_PAGE_P2).findViewById(R.id.activity_add_plant_p1_editBox_device_name);
+        this.mP1EditTextCurrTemperature = (EditText)    this.mPageViews.get(VIEW_PAGE_P2).findViewById(R.id.activity_add_plant_p1_text_temperature);
+        this.mP1EditTextCurrHumidity    = (EditText)    this.mPageViews.get(VIEW_PAGE_P2).findViewById(R.id.activity_add_plant_p1_text_humidity);
+        this.mP1EditTextCurrLux         = (EditText)    this.mPageViews.get(VIEW_PAGE_P2).findViewById(R.id.activity_add_plant_p1_text_lux);
+        this.mP1BtnConfirm              = (Button)      this.mPageViews.get(VIEW_PAGE_P2).findViewById(R.id.activity_add_plant_p1_btn_registration);
 
-        //우측 상단 종료 버튼
-        this.mViewGroup.findViewById(R.id.activity_add_plant_viewpager_btn_exit).setOnTouchListener(this);
+        this.mP1ImgBtnSelectPlant.setOnTouchListener(this);
+        this.mP1BtnConfirm.setOnTouchListener(this);
+        this.mP1EditTextCurrTemperature.setEnabled(false);
+        this.mP1EditTextCurrHumidity.setEnabled(false);
+        this.mP1EditTextCurrLux.setEnabled(false);
 
-        setContentView(this.mViewGroup);
-
-        InitBle();
     }
 
     //ble part
@@ -141,6 +183,84 @@ public class AddPlantActivity extends ActionBarActivity implements AdapterView.O
         //처음 스캔 시작
         scanLeDevice(true);
     }
+
+    //gatt 서비스 정의
+    private BluetoothGattCallback mBleGattCallback = new BluetoothGattCallback() {
+        @Override
+        //connectgatt 으로 연결 되면 아래 함수 호출
+        public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState)
+        {
+             switch (newState)
+             {
+                 case BluetoothProfile.STATE_CONNECTED: //정상 연결
+                     gatt.discoverServices();           //서비스 검색
+                     mBleStatus = newState;
+                     break;
+                 case BluetoothProfile.STATE_DISCONNECTED:
+                     mBleStatus = newState;
+                     break;
+             }
+        }
+
+        //discoverServices 로 서비스가 발견 됬으면 아래 호출
+        @Override
+        public void onServicesDiscovered(BluetoothGatt gatt, int status)
+        {
+            if(status == BluetoothGatt.GATT_SUCCESS)
+            {
+                print("onServicesDiscovered");
+
+                BluetoothGattService s = gatt.getService(GattAttributes.UUID_SERVICE_SENSING);
+                print(" ss "+s.getUuid());
+
+                ch = s.getCharacteristic(GattAttributes.UUID_CHARACTERISTIC_SENSING_DATA);
+                print(" cc "+ch.getUuid());
+
+                boolean registered = gatt.setCharacteristicNotification(ch, true);
+
+                print("111");
+                //BluetoothGattDescriptor descriptor = ch.getDescriptor(UUID.fromString(DESCRIPTOR_CHAR_LUMINISITY));
+                //descriptor.setValue(BluetoothGattDescriptor.ENABLE_INDICATION_VALUE);
+                //gatt.writeDescriptor(descriptor);
+                print("222");
+                if(registered){
+                    print("success");
+                }
+                else
+                    print("nop");
+            }
+
+        }
+
+        @Override
+        public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
+            print("onCharacteristicChanged");
+            if (GattAttributes.UUID_CHARACTERISTIC_SENSING_DATA.equals(characteristic.getUuid())) {
+                int value = characteristic.getValue()[0];
+                print("lux = " + value);
+            }
+        }
+
+        @Override
+        public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+            print("test");
+            if(status == BluetoothGatt.GATT_SUCCESS)
+            {
+                print("test");
+                print("test" + characteristic.getUuid().toString());
+                if(GattAttributes.UUID_CHARACTERISTIC_SENSING_DATA.equals(characteristic.getUuid()))
+                {
+                    print("test");
+                    final String lux = characteristic.getStringValue(0);
+                    print("lux : "+lux);
+                }
+            }
+        }
+        @Override
+        public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+            super.onCharacteristicWrite(gatt, characteristic, status);
+        }
+    };
 
 
     private void checkEnableBluetooth()
@@ -206,7 +326,14 @@ public class AddPlantActivity extends ActionBarActivity implements AdapterView.O
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id)
     {
+        if(position != -1)
+        {
+            scanLeDevice(false);                                                                    //블루투스 스캔 스탑
+            mSelectDevice = (ScannedBluetoothDevice) mP0DeviceListAdapter.getItem(position);        //선택된 디바이스 정보 저장
+            this.mBleGatt = mSelectDevice.mDevice.connectGatt(this, false, this.mBleGattCallback);  //gatt 서버에 연결
+            moveToNextPage();   //다음 페이지로 이동
 
+        }
     }
 
 
@@ -224,6 +351,18 @@ public class AddPlantActivity extends ActionBarActivity implements AdapterView.O
             {
                 scanLeDevice(true); //ble device 스캔 시작
             }
+
+            //page 2
+            else if(v.getId() == R.id.activity_add_plant_p1_btn_add_plant)      //식물 선택 창으로 전환
+            {
+
+            }
+            else if(v.getId() == R.id.activity_add_plant_p1_btn_registration)   //페이지 정보 입력 완료 p3 이동
+            {
+                print("sdgdsgs");
+                mBleGatt.readCharacteristic(ch);
+            }
+
         }
         return false;
     }
@@ -237,6 +376,14 @@ public class AddPlantActivity extends ActionBarActivity implements AdapterView.O
         return super.onKeyDown(keyCode, event);
     }
 
+    @Override
+    protected void onDestroy() {
+        this.mBleGatt.disconnect(); //갓 서비스 종료
+        scanLeDevice(false);        //스캔 종료
+
+        super.onDestroy();
+    }
+
     private void moveToPreviousPage(){
         if(this.mViewPager.getCurrentItem() == 0){    //맨처음 페이지에서 뒤로 누르면 액티비티 종료
             finish();
@@ -247,5 +394,10 @@ public class AddPlantActivity extends ActionBarActivity implements AdapterView.O
     }
     private void moveToNextPage(){
         this.mViewPager.setCurrentItem(this.mViewPager.getCurrentItem()+1);     //다음 페이지 이동
+    }
+
+    private void print(String str)
+    {
+        Log.v("pm", str);
     }
 }

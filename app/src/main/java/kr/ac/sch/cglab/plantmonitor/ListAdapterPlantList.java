@@ -1,27 +1,19 @@
 package kr.ac.sch.cglab.plantmonitor;
 
-import android.content.ClipData;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
-import android.graphics.drawable.Drawable;
-import android.service.carrier.MessagePdu;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import java.util.List;
 
-import javax.net.ssl.ManagerFactoryParameters;
-
-import kr.ac.sch.cglab.plantmonitor.Data.FileManager;
-import kr.ac.sch.cglab.plantmonitor.Data.PlantDBAdapter;
 import kr.ac.sch.cglab.plantmonitor.Data.PlantData;
 import kr.ac.sch.cglab.plantmonitor.Data.PlantsDataManager;
 

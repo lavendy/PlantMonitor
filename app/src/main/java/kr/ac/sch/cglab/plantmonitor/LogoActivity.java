@@ -3,7 +3,6 @@ package kr.ac.sch.cglab.plantmonitor;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Handler;
-import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 
 
@@ -19,15 +18,15 @@ public class LogoActivity extends Activity
         setContentView(R.layout.activity_logo);
 
 
-        //LOGO_TIMEOUT ¸¸Å­ ¾×Æ¼ºñÆ¼ »ıÁ¸ÈÄ¿¡ ¸ŞÀÎ ¾×Æ¼ºñÆ¼·Î ÀÌµ¿
+        //LOGO_TIMEOUT ë§Œí¼ ì•¡í‹°ë¹„í‹° ìƒì¡´í›„ì— ë©”ì¸ ì•¡í‹°ë¹„í‹°ë¡œ ì´ë™
         Handler handler= new Handler();
         handler.postDelayed(new Runnable()
         {
             @Override
             public void run()
             {
-                //¸ŞÀÎ ¾×Æ¼ºñÆ¼ ÀÎÅÙÆ®
-                Intent mainIntent = new Intent(LogoActivity.this, MainActivity.class);  //¸ŞÀÎ ¾×Æ¼ºñÆ¼·Î ÀÌµ¿
+                //ë©”ì¸ ì•¡í‹°ë¹„í‹° ì¸í…íŠ¸
+                Intent mainIntent = new Intent(LogoActivity.this, MainActivity.class);  //ë©”ì¸ ì•¡í‹°ë¹„í‹°ë¡œ ì´ë™
 
                 startActivity(mainIntent);
 

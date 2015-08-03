@@ -15,33 +15,33 @@ public class PlantDBAdapter
     public static final int DATABASE_VERSION = 1;
 
     public static final String DATABASE_TABLE_PHONE_INFO = "phone_info";
-    //ÆùÁ¤º¸ µ¥ÀÌºí
-    public static final String PHONE_UUID = "uuid";             //Æù uuid
-    public static final String DEVICE_NUMBER = "device_num";    //µğ¹ÙÀÌ½º °³¼ö
-    public static final String UPDATE_TIME = "update_time";     //¸¶Áö¸· ¾÷µ¥ÀÌÆ® ½Ã°£
+    //í°ì •ë³´ ë°ì´ë¸”
+    public static final String PHONE_UUID = "uuid";             //í° uuid
+    public static final String DEVICE_NUMBER = "device_num";    //ë””ë°”ì´ìŠ¤ ê°œìˆ˜
+    public static final String UPDATE_TIME = "update_time";     //ë§ˆì§€ë§‰ ì—…ë°ì´íŠ¸ ì‹œê°„
 
     public static final String DATABASE_TABLE_MONITOR_DEVICE_INFO = "monitor_device";
-    //½Ä¹° ¸ğ´ÏÅÍ¸µ µğ¹ÙÀÌ½º Á¤º¸ Å×ÀÌºí
-    public static final String DEVICE_ADDRESS = "mac_address";  //µğ¹æÀÌ½º ¸ÆÁÖ¼Ò
-    public static final String DEVICE_NAME = "device_name";     //µğ¹ÙÀÌ½º ÀÌ¸§
-    public static final String PLANT_NAME = "plant_name";       //½Ä¹° ÀÌ¸§
-    public static final String PLANT_NUM = "plant_num";         //½Ä¹° Á¤º¸ ¹øÈ£
-    public static final String PLANT_IMG_NUM = "plant_img_num"; //ÀÌ¹ÌÁö ¹øÈ£
-    public static final String PLANT_GOAL_TEMPERATURE_MIN = "goal_temperature_min"; // ¿Âµµ ÃøÁ¤ ¸ñÇ¥
+    //ì‹ë¬¼ ëª¨ë‹ˆí„°ë§ ë””ë°”ì´ìŠ¤ ì •ë³´ í…Œì´ë¸”
+    public static final String DEVICE_ADDRESS = "mac_address";  //ë””ë°©ì´ìŠ¤ ë§¥ì£¼ì†Œ
+    public static final String DEVICE_NAME = "device_name";     //ë””ë°”ì´ìŠ¤ ì´ë¦„
+    public static final String PLANT_NAME = "plant_name";       //ì‹ë¬¼ ì´ë¦„
+    public static final String PLANT_NUM = "plant_num";         //ì‹ë¬¼ ì •ë³´ ë²ˆí˜¸
+    public static final String PLANT_IMG_NUM = "plant_img_num"; //ì´ë¯¸ì§€ ë²ˆí˜¸
+    public static final String PLANT_GOAL_TEMPERATURE_MIN = "goal_temperature_min"; // ì˜¨ë„ ì¸¡ì • ëª©í‘œ
     public static final String PLANT_GOAL_TEMPERATURE_MAX = "goal_temperature_max";
-    public static final String PLANT_GOAL_HUMIDITY = "goal_humidity";       //½Àµµ ÃøÁ¤ ¸ñÇ¥
-    public static final String PLANT_GOAL_LUX_MIN = "goal_lux_min";                 //Á¶µµ ÃøÁ¤ ¸ñÇ¥
+    public static final String PLANT_GOAL_HUMIDITY = "goal_humidity";       //ìŠµë„ ì¸¡ì • ëª©í‘œ
+    public static final String PLANT_GOAL_LUX_MIN = "goal_lux_min";                 //ì¡°ë„ ì¸¡ì • ëª©í‘œ
     public static final String PLANT_GOAL_LUX_MAX = "goal_lux_max";
 
     public static final String DATABASE_TABLE_MEASURED_DATA = "measured_data";
-    //ÃøÁ¤ µ¥ÀÌÅÍ Å×ÀÌºí
-    //public static final String PLANT_NUM = "plant_num";         //½Ä¹° Á¤º¸ ¹øÈ£
-    public static final String PLANT_MEASURED_TIME = "measured_time";   //ÃøÁ¤ ½Ã°£
-    public static final String PLANT_MEASURED_HUMIDITY = "humidity";    //ÃøÁ¤ ½Àµµ
-    public static final String PLANT_MEASURED_LUX = "lux";              //ÃøÁ¤ Á¶µµ
-    public static final String PLANT_MEASURED_TEMPERATURE = "temperature";  //ÃøÁ¤ ¿Âµµ
+    //ì¸¡ì • ë°ì´í„° í…Œì´ë¸”
+    //public static final String PLANT_NUM = "plant_num";         //ì‹ë¬¼ ì •ë³´ ë²ˆí˜¸
+    public static final String PLANT_MEASURED_TIME = "measured_time";   //ì¸¡ì • ì‹œê°„
+    public static final String PLANT_MEASURED_HUMIDITY = "humidity";    //ì¸¡ì • ìŠµë„
+    public static final String PLANT_MEASURED_LUX = "lux";              //ì¸¡ì • ì¡°ë„
+    public static final String PLANT_MEASURED_TEMPERATURE = "temperature";  //ì¸¡ì • ì˜¨ë„
 
-    //Äõ¸® Á¤ÀÇ
+    //ì¿¼ë¦¬ ì •ì˜
     private static final String TABLE_CREATE_PHONE_INFO = "CREATE TABLE "+
             DATABASE_TABLE_PHONE_INFO + "(" +
             " _id INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -77,7 +77,7 @@ public class PlantDBAdapter
     private DatabaseHelper mDBHelper;
     private Context mContext = null;
 
-    //»ı¼ºÀÚ
+    //ìƒì„±ì
     public PlantDBAdapter(Context context)
     {
         this.mContext = context;
@@ -96,10 +96,10 @@ public class PlantDBAdapter
         mDBHelper.close();
     }
 
-    //uuid µğ¹ÙÀÌ½º °³¼ö, ¸¶Áö¸· ¾÷µ¥ÀÌÆ® ½Ã°£ ÀúÀå
+    //uuid ë””ë°”ì´ìŠ¤ ê°œìˆ˜, ë§ˆì§€ë§‰ ì—…ë°ì´íŠ¸ ì‹œê°„ ì €ì¥
     public long createPhoneInfo(String uuid, int count, String time)
     {
-        //µ¥ÀÌÅÍ°¡ Á¸Àç ÇÏ¸é °Ç³Ê ¶Ü
+        //ë°ì´í„°ê°€ ì¡´ì¬ í•˜ë©´ ê±´ë„ˆ ëœ€
         Cursor c = mDBReader.query(DATABASE_TABLE_PHONE_INFO, null,null,null,null,null,null );
         if(c.getCount() >= 1)
             return 0;
@@ -135,14 +135,14 @@ public class PlantDBAdapter
 
     public long createNewPlant(PlantData plantData)
     {
-        //µğ¹ÙÀÌ½º Ãß°¡
-        ContentValues initValues = plantData.getContentValue();     //µğºñ¿ëÀ¸·Î ÀúÀåµÈ µğ¹ÙÀÌ½º µ¥ÀÌÅÍ
+        //ë””ë°”ì´ìŠ¤ ì¶”ê°€
+        ContentValues initValues = plantData.getContentValue();     //ë””ë¹„ìš©ìœ¼ë¡œ ì €ì¥ëœ ë””ë°”ì´ìŠ¤ ë°ì´í„°
         return mDBWriter.insert(DATABASE_TABLE_MONITOR_DEVICE_INFO, null, initValues);
     }
     public long createNewData(PlantData plantData)
     {
         long rs = 0;
-        //ÃøÁ¤µÈ µ¥ÀÌÅÍ ÀüºÎ ¾¥¼Å ³Ö±â
+        //ì¸¡ì •ëœ ë°ì´í„° ì „ë¶€ ì‘¤ì…” ë„£ê¸°
         for(PlantData.MeasuredData data : plantData.mDataList)
         {
             ContentValues initValues = new ContentValues();
@@ -162,14 +162,14 @@ public class PlantDBAdapter
 
     public long updatePlantInfo(PlantData plantData)
     {
-        ContentValues updateValues = plantData.getContentValue();   //µğºñ¿ëÀ¸·Î ÀúÀåµÈ µğ¹ÙÀÌ½º µ¥ÀÌÅÍ
-        return mDBWriter.update(DATABASE_TABLE_MONITOR_DEVICE_INFO,       //db ³»¿ëÁß ½Ä¹° ³Ñ¹ö¶û °°Àº°Ô ÀÖÀ¸¸é ¾÷µ¥ÀÌÆ®
+        ContentValues updateValues = plantData.getContentValue();   //ë””ë¹„ìš©ìœ¼ë¡œ ì €ì¥ëœ ë””ë°”ì´ìŠ¤ ë°ì´í„°
+        return mDBWriter.update(DATABASE_TABLE_MONITOR_DEVICE_INFO,       //db ë‚´ìš©ì¤‘ ì‹ë¬¼ ë„˜ë²„ë‘ ê°™ì€ê²Œ ìˆìœ¼ë©´ ì—…ë°ì´íŠ¸
                 updateValues, PLANT_NUM + " = " + plantData.mPlantNum, null); //plant_num = 10
     }
 
 
     public long deletePhoneInfo(long rowID){
-        return mDBWriter.delete(DATABASE_TABLE_PHONE_INFO, null, null);   //ÀüÃ¼ »èÁ¦
+        return mDBWriter.delete(DATABASE_TABLE_PHONE_INFO, null, null);   //ì „ì²´ ì‚­ì œ
     }
     public long deletePlantInfo(PlantData plantData)
     {
@@ -177,14 +177,14 @@ public class PlantDBAdapter
     }
     public long deleteMesasuredData(String time, int plantNum)
     {
-        //ÃøÁ¤ ½Ã°£°ú ½Ä¹° ³Ñ¹ö·Î °Ë»ö
+        //ì¸¡ì • ì‹œê°„ê³¼ ì‹ë¬¼ ë„˜ë²„ë¡œ ê²€ìƒ‰
         return mDBWriter.delete(DATABASE_TABLE_MEASURED_DATA, PLANT_NUM + " = " + plantNum + " and " + PLANT_MEASURED_TIME + " = " + time, null);
     }
 
 
 
 
-    //Ä¿½ºÅÒ ÇïÆÛ Å¬·¡½º
+    //ì»¤ìŠ¤í…€ í—¬í¼ í´ë˜ìŠ¤
     private static class DatabaseHelper extends SQLiteOpenHelper
     {
         public DatabaseHelper(Context context) {
@@ -193,7 +193,7 @@ public class PlantDBAdapter
 
         @Override
         public void onCreate(SQLiteDatabase db) {
-            //Å×ÀÌºí »ı¼º
+            //í…Œì´ë¸” ìƒì„±
             db.execSQL(TABLE_CREATE_PHONE_INFO);
             db.execSQL(TABLE_CREATE_MONITOR_DEVICE_INFO);
             db.execSQL(TABLE_CREATE_MEASURED_DATA);
@@ -201,7 +201,7 @@ public class PlantDBAdapter
 
         @Override
         public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-            //´Ù¸¥ ¹öÀüÀ¸·Î »ı¼º½Ã ±âÁ¸ Å×ÀÌºíÀ» »èÁ¦ ÈÄ »õ Å×ÀÌºí »ı¼º
+            //ë‹¤ë¥¸ ë²„ì „ìœ¼ë¡œ ìƒì„±ì‹œ ê¸°ì¡´ í…Œì´ë¸”ì„ ì‚­ì œ í›„ ìƒˆ í…Œì´ë¸” ìƒì„±
             db.execSQL("DROP TABLE IF EXISTS " + DATABASE_TABLE_PHONE_INFO);
             db.execSQL("DROP TABLE IF EXISTS " + DATABASE_TABLE_MONITOR_DEVICE_INFO);
             db.execSQL("DROP TABLE IF EXISTS " + DATABASE_TABLE_MEASURED_DATA);

@@ -6,7 +6,6 @@ import android.support.v4.view.ViewPager;
 import android.view.View;
 
 import java.util.ArrayList;
-import java.util.Objects;
 
 /**
  * Created by Administrator on 2015-07-10.

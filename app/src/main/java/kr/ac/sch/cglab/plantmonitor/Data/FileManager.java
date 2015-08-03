@@ -1,10 +1,8 @@
 package kr.ac.sch.cglab.plantmonitor.Data;
 
 
-import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.widget.ImageView;
 
 import java.io.File;
 
@@ -19,8 +17,8 @@ public class FileManager
 
     public static Bitmap getImgFromFile(int index)
     {
-        //ÀÎµ¦½º ¿äÃ»ÇÏ¸é ÆÄÀÏ È¤Àº µğºñ¿¡¼­ ÀÌ¹ÌÁö Ã£¾Æ¼­
-        //ÀÌ¹ÌÁö ¸®ÅÏ
+        //ì¸ë±ìŠ¤ ìš”ì²­í•˜ë©´ íŒŒì¼ í˜¹ì€ ë””ë¹„ì—ì„œ ì´ë¯¸ì§€ ì°¾ì•„ì„œ
+        //ì´ë¯¸ì§€ ë¦¬í„´
 
         String imgPath = IMG_DIR + index + ".jpg";
         File imgFile = new File(imgPath);

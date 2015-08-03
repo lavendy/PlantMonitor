@@ -11,7 +11,7 @@ import java.util.UUID;
 
 public class PhoneInfoManager {
 
-    //get datetime format = 201504251132 /³â¿ùÀÏ½ÃºĞ
+    //get datetime format = 201504251132 /ë…„ì›”ì¼ì‹œë¶„
     public static String getTime()
     {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
