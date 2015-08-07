@@ -31,13 +31,17 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import kr.ac.sch.cglab.plantmonitor.BLE.GattAttributes;
 import kr.ac.sch.cglab.plantmonitor.R;
 
 
-public class AddPlantActivity extends ActionBarActivity implements AdapterView.OnItemClickListener, View.OnTouchListener {
+
+public class AddPlantActivity extends ActionBarActivity implements AdapterView.OnItemClickListener, View.OnTouchListener  {
+
+    private static final String TAG = AddPlantActivity.class.getSimpleName();
 
     private static final int REQUEST_ENABLE_BT = 1;
     private static final long SCAN_TIMEOUT = 10000;  //ble 검색 시간
@@ -76,9 +80,13 @@ public class AddPlantActivity extends ActionBarActivity implements AdapterView.O
     private BluetoothAdapter mBleAdapter;
     private BluetoothAdapter.LeScanCallback mLeScanCallback;
     private BluetoothGatt mBleGatt;
+
+    private boolean mBleConnection = false;
     //private BluetoothGattCallback mBleGattCallback; 밑에서 정의해줌
     private Handler mHandler;
     private boolean mIsScanning = false;
+
+    private DeviceData mCurrentDeviceData = new DeviceData();
 
     private int mBleStatus;
 
@@ -184,6 +192,38 @@ public class AddPlantActivity extends ActionBarActivity implements AdapterView.O
         scanLeDevice(true);
     }
 
+
+
+    @Override
+    public boolean onTouch(View v, MotionEvent event) {
+        //우측 상단 누르면 plant 등록 액티비티 종료
+        if( event.getAction() == MotionEvent.ACTION_UP){
+            if(v.getId() == R.id.activity_add_plant_viewpager_btn_exit) //우측 상단 x 버튼 누르면 종료
+            {
+                finish();
+                return true;
+            }
+            else if(v.getId() == R.id.activity_add_plant_p0_btn_search_device)  //page1 스캔 버튼 누르면
+            {
+                scanLeDevice(true); //ble device 스캔 시작
+            }
+
+            //page 2
+            else if(v.getId() == R.id.activity_add_plant_p1_btn_add_plant)      //식물 선택 창으로 전환
+            {
+
+            }
+            else if(v.getId() == R.id.activity_add_plant_p1_btn_registration)   //페이지 정보 입력 완료 p3 이동
+            {
+                print("sdgdsgs");
+                //mBleGatt.readCharacteristic(ch);
+            }
+
+        }
+        return false;
+    }
+
+
     //gatt 서비스 정의
     private BluetoothGattCallback mBleGattCallback = new BluetoothGattCallback() {
         @Override
@@ -193,11 +233,19 @@ public class AddPlantActivity extends ActionBarActivity implements AdapterView.O
              switch (newState)
              {
                  case BluetoothProfile.STATE_CONNECTED: //정상 연결
-                     gatt.discoverServices();           //서비스 검색
+                     //gatt.discoverServices();           //서비스 검색
+                     mBleConnection = true;
                      mBleStatus = newState;
+                     //ble 가 연결 됬으면 우선 대기 자동으로 service discovered 호출
+                     Log.d(TAG, "gatt connected");
+
+                     mBleGatt.discoverServices();   //find characteristic
+
                      break;
                  case BluetoothProfile.STATE_DISCONNECTED:
+                     mBleConnection = false;
                      mBleStatus = newState;
+                     Log.d(TAG, "gatt disconnected");
                      break;
              }
         }
@@ -206,61 +254,100 @@ public class AddPlantActivity extends ActionBarActivity implements AdapterView.O
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status)
         {
+            Log.d(TAG, "onServicesDiscovered");
             if(status == BluetoothGatt.GATT_SUCCESS)
             {
-                print("onServicesDiscovered");
+                List<BluetoothGattService> services = mBleGatt.getServices();
 
-                BluetoothGattService s = gatt.getService(GattAttributes.UUID_SERVICE_SENSING);
-                print(" ss "+s.getUuid());
+                BluetoothGattService sensingService = mBleGatt.getService(UUID.fromString(GattAttributes.SENSING_SERVICE));
+                //Log.d(TAG, "" + sensingService.getUuid());
 
-                ch = s.getCharacteristic(GattAttributes.UUID_CHARACTERISTIC_SENSING_DATA);
-                print(" cc "+ch.getUuid());
+                if(sensingService == null)
+                {
+                    Log.d(TAG, "Not found service : Sensing service");
+                    return;
+                }
 
-                boolean registered = gatt.setCharacteristicNotification(ch, true);
+                BluetoothGattCharacteristic sensingDataCharacteristic = sensingService.getCharacteristic(UUID.fromString(GattAttributes.SENSING_DATA_MEASUREMENT));
 
-                print("111");
-                //BluetoothGattDescriptor descriptor = ch.getDescriptor(UUID.fromString(DESCRIPTOR_CHAR_LUMINISITY));
-                //descriptor.setValue(BluetoothGattDescriptor.ENABLE_INDICATION_VALUE);
-                //gatt.writeDescriptor(descriptor);
-                print("222");
-                if(registered){
-                    print("success");
+                if(sensingDataCharacteristic == null)
+                {
+                    Log.d(TAG, "Not found characteristic : Data Measurement");
+                    return;
+                }
+
+                //mBleGatt.readCharacteristic(sensingDataCharacteristic);
+                boolean notificationRegistered = mBleGatt.setCharacteristicNotification(sensingDataCharacteristic, true);
+
+                if(notificationRegistered){
+                    BluetoothGattDescriptor descriptor = sensingDataCharacteristic.getDescriptor(UUID.fromString(GattAttributes.CLIENT_CHARACTERISTIC_CONFIG));
+                    descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+                    mBleGatt.writeDescriptor(descriptor);
+
+                    Log.d(TAG,"set notification success");
                 }
                 else
-                    print("nop");
+                {
+                    Log.d(TAG, "Can not setup the notification");
+                    return;
+                }
             }
-
         }
 
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
-            print("onCharacteristicChanged");
-            if (GattAttributes.UUID_CHARACTERISTIC_SENSING_DATA.equals(characteristic.getUuid())) {
-                int value = characteristic.getValue()[0];
-                print("lux = " + value);
+            //Log.d(TAG, "onCharacteristicChanged");
+            if(characteristic.getUuid().equals(UUID.fromString(GattAttributes.SENSING_DATA_MEASUREMENT)))
+            {
+                //데이토 포맷 / 오프셋 sint16 = 2바이트 단위 = 2씩 오프셋 들어감
+                int lux = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_SINT16, 0);    //온도 습도 조도
+                int tmp = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_SINT16, 2);    //온도 습도 조도
+                int hu = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_SINT16, 4);    //온도 습도 조도
+                Log.d(TAG,"notifi data : " + lux + " | "+ tmp + " | " + hu);
+
+                //update ui information
+                mCurrentDeviceData.mDevice = mSelectDevice.mDevice;
+                mCurrentDeviceData.mCurrentTemperature = tmp;
+                mCurrentDeviceData.mCurrentHumidity = hu;
+                mCurrentDeviceData.mCurrentLux = lux;
+                updateGUIInformation(mCurrentDeviceData);
+
             }
         }
 
         @Override
         public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-            print("test");
+            Log.d(TAG,"test");
             if(status == BluetoothGatt.GATT_SUCCESS)
             {
-                print("test");
-                print("test" + characteristic.getUuid().toString());
-                if(GattAttributes.UUID_CHARACTERISTIC_SENSING_DATA.equals(characteristic.getUuid()))
+                if(characteristic.getUuid().equals(UUID.fromString("0000cbb1-0000-1000-8000-00805f9b34fb")))
                 {
-                    print("test");
-                    final String lux = characteristic.getStringValue(0);
-                    print("lux : "+lux);
+                    int lux = characteristic.getIntValue(0x14, 0);
+                    Log.d(TAG, "dd "+lux);
                 }
             }
         }
         @Override
         public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-            super.onCharacteristicWrite(gatt, characteristic, status);
         }
     };
+
+
+    private void updateGUIInformation(final DeviceData updateData)
+    {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mP1EditTextDeviceName.setText(updateData.mDevice.getName());            //디바이스 이름
+                mP1EditTextCurrTemperature.setText(""+updateData.mCurrentTemperature);     //온도
+                mP1EditTextCurrHumidity.setText(""+updateData.mCurrentHumidity);           //습도
+                mP1EditTextCurrLux.setText(""+updateData.mCurrentLux);                     //조도 정보 갱신
+            }
+        });
+    }
+
+
+
 
 
     private void checkEnableBluetooth()
@@ -337,36 +424,6 @@ public class AddPlantActivity extends ActionBarActivity implements AdapterView.O
     }
 
 
-
-    @Override
-    public boolean onTouch(View v, MotionEvent event) {
-        //우측 상단 누르면 plant 등록 액티비티 종료
-        if( event.getAction() == MotionEvent.ACTION_UP){
-            if(v.getId() == R.id.activity_add_plant_viewpager_btn_exit) //우측 상단 x 버튼 누르면 종료
-            {
-                finish();
-                return true;
-            }
-            else if(v.getId() == R.id.activity_add_plant_p0_btn_search_device)  //page1 스캔 버튼 누르면
-            {
-                scanLeDevice(true); //ble device 스캔 시작
-            }
-
-            //page 2
-            else if(v.getId() == R.id.activity_add_plant_p1_btn_add_plant)      //식물 선택 창으로 전환
-            {
-
-            }
-            else if(v.getId() == R.id.activity_add_plant_p1_btn_registration)   //페이지 정보 입력 완료 p3 이동
-            {
-                print("sdgdsgs");
-                mBleGatt.readCharacteristic(ch);
-            }
-
-        }
-        return false;
-    }
-
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if(keyCode == KeyEvent.KEYCODE_BACK) {
@@ -378,7 +435,8 @@ public class AddPlantActivity extends ActionBarActivity implements AdapterView.O
 
     @Override
     protected void onDestroy() {
-        this.mBleGatt.disconnect(); //갓 서비스 종료
+        if(mBleGatt != null)
+            this.mBleGatt.close(); //갓 서비스 종료
         scanLeDevice(false);        //스캔 종료
 
         super.onDestroy();
@@ -399,5 +457,21 @@ public class AddPlantActivity extends ActionBarActivity implements AdapterView.O
     private void print(String str)
     {
         Log.v("pm", str);
+    }
+
+    class DeviceData
+    {
+        public BluetoothDevice mDevice;
+        public int mCurrentTemperature;
+        public int mCurrentHumidity;
+        public int mCurrentLux;
+        public DeviceData(BluetoothDevice device, int temperature, int humidity, int lux)
+        {
+            mDevice = device;
+            mCurrentTemperature = temperature;
+            mCurrentHumidity = humidity;
+            mCurrentLux = lux;
+        }
+        public DeviceData(){}
     }
 }
