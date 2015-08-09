@@ -244,13 +244,6 @@
             </LinearLayout>
         </LinearLayout>
 
-        <Button
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:text="등록"
-            android:id="@+id/activity_add_plant_p1_btn_registration"
-            android:layout_weight="1" />
-
     </LinearLayout>
 
 </FrameLayout>

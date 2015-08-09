@@ -1,133 +1,218 @@
 package kr.ac.sch.cglab.plantmonitor.NewPlant;
 
 import android.app.Activity;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothGatt;
+import android.bluetooth.BluetoothManager;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
+import android.util.AttributeSet;
+import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.Button;
+import android.widget.ListView;
+import android.widget.ProgressBar;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import kr.ac.sch.cglab.plantmonitor.R;
 
 import com.google.android.gms.plus.PlusOneButton;
 
-/**
- * A fragment with a Google +1 button.
- * Activities that contain this fragment must implement the
- * {@link AddPlantDeviceFragment0.OnFragmentInteractionListener} interface
- * to handle interaction events.
- * Use the {@link AddPlantDeviceFragment0#newInstance} factory method to
- * create an instance of this fragment.
- */
-public class AddPlantDeviceFragment0 extends Fragment {
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
+import java.util.ArrayList;
+import java.util.List;
 
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
+public class AddPlantDeviceFragment0 extends Fragment implements View.OnTouchListener, AdapterView.OnItemClickListener
+{
+    public static final String TAG = AddPlantDeviceFragment0.class.getSimpleName();
 
-    // The URL to +1.  Must be a valid URL.
-    private final String PLUS_ONE_URL = "http://developer.android.com";
+    private static final short REQUEST_ENABLE_BT = 1;
+    private static final long SCAN_TIMEOUT = 4000;
 
-    // The request code must be 0 or greater.
-    private static final int PLUS_ONE_REQUEST_CODE = 0;
+    //reference variable p0
+    private ListView mListViewDeviceList;
+    private Button mBtnScanDevice;
+    private TextView mTextViewStatus;
+    private ProgressBar mProgressBarScanStatus;
+    private ListAdapterScanDevice mDeviceListAdapter;
 
-    private PlusOneButton mPlusOneButton;
+    private ArrayList<ScannedBluetoothDevice> mScannedDeviceList;   //스캔된 ble 디바이스들 보관 리스트
+    private ScannedBluetoothDevice mSelectDevice;                   //선택된 블루투스 디바이스 저장
 
-    private OnFragmentInteractionListener mListener;
+    private BluetoothAdapter mBleAdapter;
+    private BluetoothAdapter.LeScanCallback mLeScanCallback;
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment AddPlantDeviceFragment0.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static AddPlantDeviceFragment0 newInstance(String param1, String param2) {
-        AddPlantDeviceFragment0 fragment = new AddPlantDeviceFragment0();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
-    }
+    private Handler mHandler;
+    private boolean mIsScanning = false;
 
-    public AddPlantDeviceFragment0() {
-        // Required empty public constructor
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
+    {
+        this.mHandler = new Handler();
+        mScannedDeviceList = new ArrayList<ScannedBluetoothDevice>();
+
+        View v = inflater.inflate(R.layout.activity_add_plant_p0, container, false);
+
+        mListViewDeviceList = (ListView) v.findViewById(R.id.activity_add_plant_p0_listView_searched);
+        mBtnScanDevice = (Button) v.findViewById(R.id.activity_add_plant_p0_btn_search_device);
+        mTextViewStatus = (TextView) v.findViewById(R.id.activity_add_plant_p0_textView_status);
+        mProgressBarScanStatus = (ProgressBar) v.findViewById(R.id.activity_add_plant_p0_progressBar_search);
+
+        //p0 ui 초기화
+        this.mDeviceListAdapter = new ListAdapterScanDevice(getActivity(), R.layout.list_adapter_new_device, this.mScannedDeviceList);
+        this.mListViewDeviceList.setAdapter(this.mDeviceListAdapter);
+        this.mListViewDeviceList.setOnItemClickListener(this);
+        this.mBtnScanDevice.setOnTouchListener(this);
+
+        return v;
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
-    }
-
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        View view = inflater.inflate(R.layout.fragment_add_plant_device_fragment0, container, false);
-
-        //Find the +1 button
-        mPlusOneButton = (PlusOneButton) view.findViewById(R.id.plus_one_button);
-
-        return view;
-    }
-
-    @Override
-    public void onResume() {
+    public void onResume()
+    {
         super.onResume();
 
-        // Refresh the state of the +1 button each time the activity receives focus.
-        mPlusOneButton.initialize(PLUS_ONE_URL, PLUS_ONE_REQUEST_CODE);
+        if( !checkEnableBluetooth()){    //사용불가 종료
+            getActivity().finish();
+        }
+        InitializeBle();    //ble 초기화
     }
 
-    // TODO: Rename method, update argument and hook method into UI event
-    public void onButtonPressed(Uri uri) {
-        if (mListener != null) {
-            mListener.onFragmentInteraction(uri);
+    private boolean checkEnableBluetooth()
+    {
+        if (!getActivity().getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE))
+        {
+            Toast.makeText(getActivity(), "블루투스를 사용 할 수 없습니다.", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        return true;
+    }
+
+    void InitializeBle()
+    {
+        // Initializes Bluetooth adapter.
+        final BluetoothManager bluetoothManager = (BluetoothManager) getActivity().getSystemService(getActivity().BLUETOOTH_SERVICE);
+        this.mBleAdapter = bluetoothManager.getAdapter();
+
+        if(this.mBleAdapter == null || !this.mBleAdapter.isEnabled())
+        {
+            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+        }
+
+        //registration of callback
+        this.mLeScanCallback = new BluetoothAdapter.LeScanCallback()
+        {
+            @Override
+            public void onLeScan(final BluetoothDevice device, final int rssi, final byte[] scanRecord)
+            {
+                Log.d("tes", "device found: " + device.getName());
+
+                getActivity().runOnUiThread(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        ScannedBluetoothDevice newDevice = new ScannedBluetoothDevice(device, rssi);
+                        mDeviceListAdapter.addDevice(newDevice);
+                        mDeviceListAdapter.notifyDataSetChanged();
+                    }
+                });
+            }
+        };
+
+        //처음 스캔 시작
+        scanLeDevice(true);
+    }
+
+
+    //ble 스캔 시작 제어
+    private  void scanLeDevice(final boolean enable)
+    {
+        if(enable == true && this.mIsScanning == false) //이전에 스캔이 안끝났으면 ㅁ시
+        {
+            mHandler.postDelayed(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    stopDeviceScan();
+                }
+            }, SCAN_TIMEOUT);   //timeout 시간 후 스캔 중지
+
+            startDeviceScan();
+        }
+        else if(enable == false)
+        {
+            stopDeviceScan();
         }
     }
 
+    private void stopDeviceScan()
+    {
+        mBleAdapter.stopLeScan(mLeScanCallback);
+
+        this.mIsScanning = false;  //스캔 상태 중복 장비
+
+        this.mTextViewStatus.setText("" + this.mScannedDeviceList.size() + "개 디바이스 검색됨");
+        this.mProgressBarScanStatus.setVisibility(View.INVISIBLE);
+    }
+
+    private void startDeviceScan()
+    {
+        mBleAdapter.startLeScan(mLeScanCallback);
+
+        this.mIsScanning = true;    //스캥 상태임 중복실행 방지
+
+        getActivity().runOnUiThread(new Runnable() {      //리스트 뷰 초기화 하고
+            @Override
+            public void run() {
+                mScannedDeviceList.clear();         //디바이스 리스트 초기화
+                mDeviceListAdapter.notifyDataSetChanged();
+
+                //gui 업데이트
+                mTextViewStatus.setText("디바이스를 찾는중...");
+                mProgressBarScanStatus.setVisibility(View.VISIBLE);
+            }
+        });
+    }
+
     @Override
-    public void onAttach(Activity activity) {
-        super.onAttach(activity);
-        try {
-            mListener = (OnFragmentInteractionListener) activity;
-        } catch (ClassCastException e) {
-            throw new ClassCastException(activity.toString()
-                    + " must implement OnFragmentInteractionListener");
+    public void onStop()
+    {
+        scanLeDevice(false);
+
+        super.onStop();
+    }
+
+    @Override
+    public boolean onTouch(View v, MotionEvent event) {
+        if(v.getId() == R.id.activity_add_plant_p0_btn_search_device)
+        {
+            scanLeDevice(true); //ble device 스캔 시작
         }
+        return false;
     }
 
     @Override
-    public void onDetach() {
-        super.onDetach();
-        mListener = null;
-    }
+    public void onItemClick(AdapterView<?> parent, View view, int position, long id)
+    {
+        scanLeDevice(false);                                                                    //블루투스 스캔 스탑
+        mSelectDevice = (ScannedBluetoothDevice) mDeviceListAdapter.getItem(position);        //선택된 디바이스 정보 저장
 
-    /**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     * <p/>
-     * See the Android Training lesson <a href=
-     * "http://developer.android.com/training/basics/fragments/communicating.html"
-     * >Communicating with Other Fragments</a> for more information.
-     */
-    public interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
-        public void onFragmentInteraction(Uri uri);
+        //broadcast to addplantActivity     //다음 페이지로 이동
+        ((AddPlantActivity)getActivity()).moveToFragment1(mSelectDevice.mDevice);   //상위 activity 의 다음 fragment 교체 메쏘드 요청
     }
-
 }
