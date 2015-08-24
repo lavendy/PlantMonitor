@@ -47,6 +47,7 @@ public class AddPlantDeviceFragment0 extends Fragment implements View.OnTouchLis
     private TextView mTextViewStatus;
     private ProgressBar mProgressBarScanStatus;
     private ListAdapterScanDevice mDeviceListAdapter;
+    private Button mBtnBack;
 
     private ArrayList<ScannedBluetoothDevice> mScannedDeviceList;   //스캔된 ble 디바이스들 보관 리스트
     private ScannedBluetoothDevice mSelectDevice;                   //선택된 블루투스 디바이스 저장
@@ -69,12 +70,14 @@ public class AddPlantDeviceFragment0 extends Fragment implements View.OnTouchLis
         mBtnScanDevice = (Button) v.findViewById(R.id.activity_add_plant_p0_btn_search_device);
         mTextViewStatus = (TextView) v.findViewById(R.id.activity_add_plant_p0_textView_status);
         mProgressBarScanStatus = (ProgressBar) v.findViewById(R.id.activity_add_plant_p0_progressBar_search);
+        mBtnBack = (Button) v.findViewById(R.id.activity_add_plant_p0_btn_back);
 
         //p0 ui 초기화
         this.mDeviceListAdapter = new ListAdapterScanDevice(getActivity(), R.layout.list_adapter_new_device, this.mScannedDeviceList);
         this.mListViewDeviceList.setAdapter(this.mDeviceListAdapter);
         this.mListViewDeviceList.setOnItemClickListener(this);
         this.mBtnScanDevice.setOnTouchListener(this);
+        this.mBtnBack.setOnTouchListener(this);
 
         return v;
     }
@@ -199,10 +202,18 @@ public class AddPlantDeviceFragment0 extends Fragment implements View.OnTouchLis
 
     @Override
     public boolean onTouch(View v, MotionEvent event) {
-        if(v.getId() == R.id.activity_add_plant_p0_btn_search_device)
+        if(event.getAction() == MotionEvent.ACTION_UP)
         {
-            scanLeDevice(true); //ble device 스캔 시작
+            if(v.getId() == R.id.activity_add_plant_p0_btn_search_device)
+            {
+                scanLeDevice(true); //ble device 스캔 시작
+            }
+            else if(v.getId() == R.id.activity_add_plant_p0_btn_back)
+            {
+                ((AddPlantActivity)getActivity()).moveToPreviousPage(); //이전 페이지 이동
+            }
         }
+
         return false;
     }
 

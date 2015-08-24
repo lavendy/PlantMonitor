@@ -1,5 +1,6 @@
 package kr.ac.sch.cglab.plantmonitor.NewPlant;
 
+import android.app.ProgressDialog;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
@@ -7,11 +8,7 @@ import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothProfile;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -28,6 +25,8 @@ import java.util.UUID;
 
 import kr.ac.sch.cglab.plantmonitor.BLE.DeviceData;
 import kr.ac.sch.cglab.plantmonitor.BLE.GattAttributes;
+import kr.ac.sch.cglab.plantmonitor.Data.PlantData;
+import kr.ac.sch.cglab.plantmonitor.Data.PlantsDataManager;
 import kr.ac.sch.cglab.plantmonitor.R;
 
 /**
@@ -43,7 +42,11 @@ public class AddPlantDeviceFragment1 extends Fragment implements View.OnTouchLis
     private EditText mEditTextCurrTemperature;
     private EditText mEditTextCurrHumidity;
     private EditText mEditTextCurrLux;
+
+    private Button mBtnBack;
     private Button mBtnConfirm;
+
+    private ProgressDialog mDialogStoreDB;
 
     //ble variable
     private BluetoothGatt mBleGatt = null;
@@ -57,17 +60,30 @@ public class AddPlantDeviceFragment1 extends Fragment implements View.OnTouchLis
         View v = inflater.inflate(R.layout.activity_add_plant_p1, container, false);
 
         this.mImgBtnSelectPlant       = (ImageButton) v.findViewById(R.id.activity_add_plant_p1_btn_add_plant);
+        this.mEditTextPlantName       = (EditText)    v.findViewById(R.id.activity_add_plant_p1_editBox_plant_name);
         this.mEditTextDeviceName      = (EditText)    v.findViewById(R.id.activity_add_plant_p1_editBox_device_name);
         this.mEditTextCurrTemperature = (EditText)    v.findViewById(R.id.activity_add_plant_p1_text_temperature);
         this.mEditTextCurrHumidity    = (EditText)    v.findViewById(R.id.activity_add_plant_p1_text_humidity);
         this.mEditTextCurrLux         = (EditText)    v.findViewById(R.id.activity_add_plant_p1_text_lux);
 
+        //this.mProgressTemperature     = (ProgressBar) v.findViewById(R.id.activity_add_plant_p1_editBox_plant_name)
+
+        this.mBtnBack                 = (Button)      v.findViewById(R.id.activity_add_plant_p1_btn_back);
+        this.mBtnConfirm              = (Button)      v.findViewById(R.id.activity_add_plant_p1_btn_commit);
+
         this.mImgBtnSelectPlant.setOnTouchListener(this);
+        this.mBtnConfirm.setOnTouchListener(this);
+        this.mBtnBack.setOnTouchListener(this);
+
         this.mEditTextCurrTemperature.setEnabled(false);
         this.mEditTextCurrHumidity.setEnabled(false);
         this.mEditTextCurrLux.setEnabled(false);
 
         //store current data
+        this.mDialogStoreDB = new ProgressDialog(getActivity());
+        this.mDialogStoreDB.setMessage("식물 정보를 등록 하고 있습니다.");
+        this.mDialogStoreDB.setCancelable(false);
+
         this.mCurrentDeviceData = new DeviceData();
 
         return v;
@@ -213,9 +229,71 @@ public class AddPlantDeviceFragment1 extends Fragment implements View.OnTouchLis
             {
 
             }
+            else if(v.getId() == R.id.activity_add_plant_p1_btn_back)
+            {
+                ((AddPlantActivity)getActivity()).moveToPreviousPage();
+            }
+            else if(v.getId() == R.id.activity_add_plant_p1_btn_commit)
+            {
+                PlantData addPlant = updateNewDeviceInformation();   //데이터들을 객체에 저장
+
+                if(storeDeviceToDB(addPlant) == true)   //등록 성공 하였으면 3페이지 이동
+                {
+                    updateNewPlantDataToBleDevice(addPlant);
+                    ((AddPlantActivity)getActivity()).moveToFragment2(addPlant);
+                }
+            }
         }
 
         return false;
+    }
+
+
+
+    private PlantData updateNewDeviceInformation()
+    {
+        PlantData newPlant = new PlantData();
+
+        newPlant.mImgNum = 0;
+        newPlant.mPlantNum = 1;
+        newPlant.mPlantName = ""+mEditTextPlantName.getText();
+
+        newPlant.mDevice = this.mDevice;
+
+        newPlant.mGoalTemperatureMin = 15;
+        newPlant.mGoalTemperatureMax = 18;
+        newPlant.mGoalHumidity = 50;
+        newPlant.mGoalLuxMin = 700;
+        newPlant.mGoalLuxMax = 1000;
+
+        return newPlant;
+    }
+
+    //DB에 디바이스 저장
+    private boolean storeDeviceToDB(PlantData data)
+    {
+        boolean success = false;
+
+        this.mDialogStoreDB.show();
+
+        long rs = PlantsDataManager.mPlantDBAdapter.createNewPlant(data);
+        if(rs != -1)    //디비 등록 성공
+        {
+            PlantsDataManager.mPlantDBAdapter.addNewPlantDeviceToPhoneInfo();   //DB device 개수 업데이트
+            PlantsDataManager.mPlantsList.add(data);                            //리스트에 디바이스 추가
+
+            success = true;
+        }
+
+        this.mDialogStoreDB.dismiss();
+
+        return success;
+    }
+
+    //ble 디바이스에 새로 추가된 식물 정보와 제어 정보 전송
+    private void updateNewPlantDataToBleDevice(PlantData addPlant)
+    {
+
     }
 
 }

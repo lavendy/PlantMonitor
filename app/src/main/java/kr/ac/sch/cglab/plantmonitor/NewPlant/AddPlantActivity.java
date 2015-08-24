@@ -39,6 +39,7 @@ import java.util.UUID;
 
 import kr.ac.sch.cglab.plantmonitor.BLE.DeviceData;
 import kr.ac.sch.cglab.plantmonitor.BLE.GattAttributes;
+import kr.ac.sch.cglab.plantmonitor.Data.PlantData;
 import kr.ac.sch.cglab.plantmonitor.R;
 
 
@@ -58,6 +59,8 @@ public class AddPlantActivity extends FragmentActivity implements View.OnTouchLi
     private Button mBtnBack;
     private Button mBtnCommit;
 
+    private boolean mSelectPlant = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -65,13 +68,8 @@ public class AddPlantActivity extends FragmentActivity implements View.OnTouchLi
 
         //버튼
         this.mBtnExit = (Button) findViewById(R.id.activity_add_plant_viewpager_btn_exit);
-        this.mBtnBack = (Button) findViewById(R.id.activity_add_plant_view_btn_back);
-        this.mBtnCommit = (Button) findViewById(R.id.activity_add_plant_view_btn_commit);
 
         this.mBtnExit.setOnTouchListener(this);
-        this.mBtnBack.setOnTouchListener(this);
-        this.mBtnCommit.setOnTouchListener(this);
-
 
         mCurrentFragmentIndex = FRAGMENT_P0;
         fragmentReplace(mCurrentFragmentIndex);
@@ -85,9 +83,10 @@ public class AddPlantActivity extends FragmentActivity implements View.OnTouchLi
 
         p1Fragment.connectBLE(device);  //1페이지 fragment 는 gatt server에 연결
     }
-    public void moveToPragment2()
+    public void moveToFragment2(PlantData plantData)
     {
-
+        AddPlantDeviceFragment2 p2Fragment = (AddPlantDeviceFragment2)fragmentReplace(FRAGMENT_P2);
+        p2Fragment.readyToRegisterPlant(plantData);
     }
     public void commitPlantToDB()
     {
@@ -102,7 +101,7 @@ public class AddPlantActivity extends FragmentActivity implements View.OnTouchLi
         Fragment newFragment = getFragment(currentFragmentIndex);
 
         final FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-        transaction.replace(R.id.activity_add_plant_view_fragment_control_view, newFragment);
+        transaction.replace(R.id.activity_add_plant_view_fragment_control_view, newFragment, ""+currentFragmentIndex);
         transaction.commit();       //fragment 변경!
 
         updateButtonGUI();          //버튼 gui변경
@@ -114,20 +113,14 @@ public class AddPlantActivity extends FragmentActivity implements View.OnTouchLi
     {
         if(mCurrentFragmentIndex == FRAGMENT_P0)
         {
-            mBtnCommit.setEnabled(false);
-            mBtnBack.setText("종료");
+            mSelectPlant = false;   //처음 페이지에서는 식물이 선택 되지 않음
         }
         else if(mCurrentFragmentIndex == FRAGMENT_P1)
         {
-            mBtnCommit.setEnabled(false);
-            mBtnBack.setText("뒤로");
         }
         else if(mCurrentFragmentIndex == FRAGMENT_P2);
         {
-            mBtnCommit.setEnabled(true);
-            mBtnBack.setText("뒤로");
         }
-
     }
 
     private Fragment getFragment(int index)
@@ -138,8 +131,8 @@ public class AddPlantActivity extends FragmentActivity implements View.OnTouchLi
                 return new AddPlantDeviceFragment0();
             case FRAGMENT_P1:
                 return new AddPlantDeviceFragment1();
-            //case FRAGMENT_P2:
-                //return new AddPlantDeviceFragment2();
+            case FRAGMENT_P2:
+                return new AddPlantDeviceFragment2();
             default:
                 Log.d(TAG,"Could not make AddPlantDeviceFragment");
                 break;
@@ -157,15 +150,6 @@ public class AddPlantActivity extends FragmentActivity implements View.OnTouchLi
                 finish();
                 return true;
             }
-            else if(v.getId() == R.id.activity_add_plant_view_btn_back)     //뒤로가기 버튼
-            {
-                moveToPreviousPage();   //뒷 fragment 체인지
-            }
-            else if(v.getId() == R.id.activity_add_plant_view_btn_commit)   //등록 버튼
-            {
-
-            }
-
         }
         return false;
     }
@@ -188,5 +172,10 @@ public class AddPlantActivity extends FragmentActivity implements View.OnTouchLi
             mCurrentFragmentIndex--;
             fragmentReplace(mCurrentFragmentIndex);
         }
+    }
+
+    public void successRegistration()
+    {
+        finish();
     }
 }

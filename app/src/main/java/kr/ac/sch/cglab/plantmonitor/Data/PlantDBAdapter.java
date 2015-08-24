@@ -5,8 +5,11 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.nfc.Tag;
+import android.util.Log;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 
 
 public class PlantDBAdapter
@@ -60,7 +63,7 @@ public class PlantDBAdapter
             PLANT_GOAL_TEMPERATURE_MIN + " INTEGER, " +
             PLANT_GOAL_TEMPERATURE_MAX + " INTEGER, " +
             PLANT_GOAL_HUMIDITY + " INTEGER, "+
-            PLANT_GOAL_LUX_MIN + " INTEGER " +
+            PLANT_GOAL_LUX_MIN + " INTEGER, " +
             PLANT_GOAL_LUX_MAX + " INTEGER " + ")";
 
     private static final String TABLE_CREATE_MEASURED_DATA = "CREATE TABLE "+
@@ -71,6 +74,10 @@ public class PlantDBAdapter
             PLANT_MEASURED_TEMPERATURE + " INTEGER, " +
             PLANT_MEASURED_HUMIDITY + "INTEGER, " +
             PLANT_MEASURED_LUX + " INTEGER " + ")";
+
+    //delete table
+    private static final String TABLE_DROP_MONITOR_DEVICE_INFO = "DROP TABLE "+
+            DATABASE_TABLE_MONITOR_DEVICE_INFO;
 
     private SQLiteDatabase mDBWriter;
     private SQLiteDatabase mDBReader;
@@ -110,10 +117,47 @@ public class PlantDBAdapter
         initValues.put(UPDATE_TIME, time);
         return mDBWriter.insert(DATABASE_TABLE_PHONE_INFO, null, initValues);
     }
-    public String getPhoneInfo()
+
+    public long addNewPlantDeviceToPhoneInfo()  //디바이스 추가 될때마다 증가
     {
+        int deviceNum = getDeviceNumFromPhoneInfo();
+        deviceNum++;
+
+        return updateDeviceNumToPhoneInfo(deviceNum);
+    }
+    public long removePlantDeviceFromPhoneInfo()
+    {
+        int deviceNum = getDeviceNumFromPhoneInfo();
+        deviceNum--;
+
+        return updateDeviceNumToPhoneInfo(deviceNum);
+    }
+    private int getDeviceNumFromPhoneInfo()
+    {
+        Cursor c = mDBReader.query(DATABASE_TABLE_PHONE_INFO, null, null, null, null, null, null);
+        c.moveToFirst();
+        return c.getInt(c.getColumnIndex(DEVICE_NUMBER));
+    }
+    private long updateDeviceNumToPhoneInfo(int num)
+    {
+        ContentValues updateValues = new ContentValues();
+        updateValues.put(DEVICE_NUMBER, num);
+        return mDBWriter.update(DATABASE_TABLE_PHONE_INFO, updateValues, "_id = 1", null);
+    }
+
+    public long updateLastUpdatedTime(String time)
+    {
+        ContentValues updateValues = new ContentValues();
+        updateValues.put(UPDATE_TIME, time);
+        return mDBWriter.update(DATABASE_TABLE_PHONE_INFO, updateValues, "_id = 1", null);
+    }
+
+
+
+
+    public String getPhoneInfo() {
         String str = "";
-        Cursor c = mDBReader.query(DATABASE_TABLE_PHONE_INFO, null,null,null,null,null,null );
+        Cursor c = mDBReader.query(DATABASE_TABLE_PHONE_INFO, null, null, null, null, null, null);
         if(c.getCount() == 0)
             return "phone_info has no data";
         else
@@ -125,12 +169,8 @@ public class PlantDBAdapter
         return str;
     }
 
-    public long updateLastUpdatedTime(String time)
-    {
-        ContentValues updateValues = new ContentValues();
-        updateValues.put(UPDATE_TIME, time);
-        return mDBWriter.update(DATABASE_TABLE_PHONE_INFO, updateValues, "_id = 1", null);
-    }
+
+
 
 
     public long createNewPlant(PlantData plantData)
@@ -158,6 +198,47 @@ public class PlantDBAdapter
         return rs;
     }
 
+    public ArrayList<PlantData> getPlantDeviceListFromDB()
+    {
+        ArrayList<PlantData> list = new ArrayList<PlantData>();
+
+        Cursor c = mDBReader.query(DATABASE_TABLE_MONITOR_DEVICE_INFO, null, null, null, null, null, null);
+        if(c.getCount() == 0) {
+            Log.d("pp", "No data from DATABASE_TABLE_MONITOR_DEVICE_INFO");
+            return null;
+        }
+        else
+        {
+            c.moveToFirst();
+            for (int i = 0; i < c.getCount(); ++i)  //디바이스 리스트 읽어서 파싱 후 리스트에 등록
+            {
+                PlantData data = new PlantData();
+
+                //bluetooth device 객체는 바로 생성이 불가능 하므로, address 만 먼저 읽어서 mainActivity 에서 주소로 디바이스 연결후 따로 저장
+                //data.mDevice = c.getDevice();
+                data.mAddress   = c.getString(c.getColumnIndex(DEVICE_ADDRESS));
+
+                data.mPlantNum  = c.getInt(c.getColumnIndex(PLANT_NUM));
+                data.mPlantName = c.getString(c.getColumnIndex(PLANT_NAME));
+                data.mImgNum    = c.getInt(c.getColumnIndex(PLANT_IMG_NUM));
+
+                data.mGoalTemperatureMin = c.getInt(c.getColumnIndex(PLANT_GOAL_TEMPERATURE_MIN));
+                data.mGoalTemperatureMax = c.getInt(c.getColumnIndex(PLANT_GOAL_TEMPERATURE_MAX));
+                data.mGoalHumidity= c.getInt(c.getColumnIndex(PLANT_GOAL_HUMIDITY));
+                data.mGoalLuxMin = c.getInt(c.getColumnIndex(PLANT_GOAL_LUX_MIN));
+                data.mGoalLuxMax = c.getInt(c.getColumnIndex(PLANT_GOAL_LUX_MAX));
+
+                Log.d("tset", data.toString());
+
+                list.add(data);
+
+                c.moveToNext();
+            }
+
+        }
+
+        return list;
+    }
 
 
     public long updatePlantInfo(PlantData plantData)

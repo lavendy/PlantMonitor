@@ -29,22 +29,25 @@ public class ListAdapterScanDevice extends BaseAdapter
     }
 
     //리스트에 이미 등록된 디바이가 있는지 검사 후 없으면 새로 추가
-    public void addDevice(ScannedBluetoothDevice device){
+    public void addDevice(ScannedBluetoothDevice newDevice){
         int count = 0;
-        String ppAddr = device.mDevice.getAddress();
+        String ppAddr = newDevice.mDevice.getAddress();
 
         for (int i = 0; i < mDeviceList.size(); ++i){
             ScannedBluetoothDevice dev = mDeviceList.get(i);
             String newAddr = dev.mDevice.getAddress();
 
             if(ppAddr.equals(newAddr)) {
-                updateDeviceRSSI(dev, device.mRSSI);        //기존에 있는 디바이스면 RSSI 정보를 업데이트
+                if(Math.abs(newDevice.mRSSI - dev.mRSSI) < 30){
+                    updateDeviceRSSI(dev, newDevice.mRSSI);        //기존에 있는 디바이스면 RSSI 정보를 업데이트
+                }
+
                 count++;
             }
         }
 
-        if(count == 0)
-            mDeviceList.add(device);
+        if(count == 0 && newDevice.mRSSI < 0)
+            mDeviceList.add(newDevice);
     }
 
     //리스트에 이미 등록된 디바이스 검사후 RSSI 업데이터
@@ -101,6 +104,8 @@ public class ListAdapterScanDevice extends BaseAdapter
         }
         else
             rssiStr = "멀리 떨어짐";
+
+        rssiStr = "RSSI : "+device.mRSSI;
 
         //rssi 분석후 거리 표시
         ((TextView)convertView.findViewById(R.id.list_Adapter_new_device_txtBx_device_rssi)).setText(rssiStr);

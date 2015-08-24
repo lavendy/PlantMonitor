@@ -10,10 +10,31 @@ public class PlantsDataManager
 
     public static String mUUID;
     public static ArrayList<PlantData> mPlantsList = new ArrayList<>();
+    public static PlantDBAdapter mPlantDBAdapter;
 
     public int getPlnatsNum()
     {
         return mPlantsList.size();
+    }
+
+    //address 주소로 등록된 디바이스 찾기
+    public static PlantData getPlantData(String address)
+    {
+        for (PlantData data : mPlantsList)
+        {
+            if(data.getDeviceMacAddress() == address)
+                return data;
+        }
+        return null;
+    }
+    public static int getPlantDataIndex(String address)
+    {
+        for (int i =0 ; i < mPlantsList.size(); ++i)
+        {
+            if(mPlantsList.get(i).getAddress() == address)
+                return i;
+        }
+        return 0;
     }
 
     public static String getPlantStatus(int num) {

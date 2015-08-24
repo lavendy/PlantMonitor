@@ -1,12 +1,16 @@
 package kr.ac.sch.cglab.plantmonitor.Data;
 
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothGatt;
 import android.content.ContentValues;
 
 import java.util.ArrayList;
 
+import kr.ac.sch.cglab.plantmonitor.BLE.BluetoothLeService;
+
 public class PlantData {
-    public String mPlantName = "";
+    public boolean mConnected = false;
+    public String mPlantName = "NoPlant";
     public int mPlantNum = -1;
     public int mImgNum = -1;
 
@@ -24,9 +28,12 @@ public class PlantData {
 
     public boolean mIsConnected = false;
 
-    public BluetoothDevice mDevice;
+    public BluetoothDevice mDevice = null;
+    public BluetoothGatt mBleGatt = null;
 
     public ContentValues mContentValue; //디비 저장 용도
+    public String mAddress = "";       //DB에 저장된 address
+
 
     public String getDeviceName()
     {
@@ -47,13 +54,17 @@ public class PlantData {
         mContentValue.put(PlantDBAdapter.PLANT_IMG_NUM, this.mImgNum);      //이미지 식별 번호
         mContentValue.put(PlantDBAdapter.PLANT_GOAL_HUMIDITY, this.mGoalHumidity);   // 목표 습도
         mContentValue.put(PlantDBAdapter.PLANT_GOAL_TEMPERATURE_MIN, this.mGoalTemperatureMin); //목표 온도
-        mContentValue.put(PlantDBAdapter.PLANT_GOAL_TEMPERATURE_MIN, this.mGoalTemperatureMax); //목표 온도
+        mContentValue.put(PlantDBAdapter.PLANT_GOAL_TEMPERATURE_MAX, this.mGoalTemperatureMax); //목표 온도
         mContentValue.put(PlantDBAdapter.PLANT_GOAL_LUX_MIN, this.mGoalLuxMin); //목표 조도
         mContentValue.put(PlantDBAdapter.PLANT_GOAL_LUX_MAX, this.mGoalLuxMax); //목표 조도
 
         return mContentValue;
     }
 
+    public String getAddress() {
+        return mAddress;
+    }
+    public void setAddress(String str){    mAddress = str;  }
 
 
     public class MeasuredData
@@ -62,5 +73,22 @@ public class PlantData {
         public int mTemperature;
         public int mLux;
         public String mTime;
+    }
+
+    @Override
+    public String toString() {
+        String str = "";
+
+        str += " "+mAddress;
+        str += " "+mPlantName;
+        str += " "+mImgNum;
+        str += " "+mPlantNum;
+        str += " "+mGoalTemperatureMin;
+        str += " "+mGoalTemperatureMax;
+        str += " "+mGoalHumidity;
+        str += " "+mGoalLuxMin;
+        str += " "+mGoalLuxMax;
+
+        return str;
     }
 }

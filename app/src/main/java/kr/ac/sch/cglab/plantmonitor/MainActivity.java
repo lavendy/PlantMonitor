@@ -2,9 +2,15 @@ package kr.ac.sch.cglab.plantmonitor;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.IBinder;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -14,6 +20,8 @@ import android.widget.ListView;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+
+import kr.ac.sch.cglab.plantmonitor.BLE.BluetoothLeService;
 import kr.ac.sch.cglab.plantmonitor.Data.PhoneInfoManager;
 import kr.ac.sch.cglab.plantmonitor.Data.PlantDBAdapter;
 import kr.ac.sch.cglab.plantmonitor.Data.PlantData;
@@ -22,6 +30,8 @@ import kr.ac.sch.cglab.plantmonitor.NewPlant.AddPlantActivity;
 
 
 public class MainActivity extends Activity implements View.OnTouchListener, AdapterView.OnItemClickListener {
+    private final String TAG = MainActivity.class.getSimpleName();
+
     private Context mContext;
 
     private static PlantsDataManager mPlantManager;
@@ -36,12 +46,82 @@ public class MainActivity extends Activity implements View.OnTouchListener, Adap
 
     //ble
     private BluetoothAdapter mBleAdapter;
-    //private Handler mHandler;
-    //private BluetoothAdapter.LeScanCallback mLeScanCallback;
+    private BluetoothLeService mBluetoothLeService = null;
+    private Handler mHandler;
 
-    public MainActivity()
+    private final ServiceConnection mServiceConnection = new ServiceConnection()
     {
-    }
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service)
+        {
+            mBluetoothLeService = ((BluetoothLeService.LocalBinder)service).getService();
+            if (!mBluetoothLeService.initialize()) {
+                Log.e(TAG, "Unable to initialize Bluetooth");
+                finish();
+            }
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name)
+        {
+            mBluetoothLeService = null;
+        }
+    };
+
+    //데이터 처리
+    private final BroadcastReceiver mGattUpdateReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent)   //넘겨 받을때 무조건 mac address 검사
+        {
+            final String action = intent.getAction();
+            String address = intent.getStringExtra("ID");   //address 추출
+
+            PlantData plantData = PlantsDataManager.getPlantData(address);  //검색
+            int plantIndex = PlantsDataManager.getPlantDataIndex(address);  //순번 검색
+
+            //id 검색후
+            if(action == BluetoothLeService.ACTION_GATT_CONNECTED)  //ble 연결 되었으면
+            {
+                plantData.mBleGatt.discoverServices();
+            }
+            else if(action == BluetoothLeService.ACTION_GATT_DISCONNECTED)
+            {
+
+            }
+            else if(action == BluetoothLeService.ACTION_GATT_SERVICE_DISCOVERED)
+            {
+
+            }
+            else if(action == BluetoothLeService.ACTION_DATA_AVAILABLE) //read
+            {
+
+            }
+            else if(action == BluetoothLeService.ACTION_DATA_SENSING_NOTIFICATION)  //lux temp, humi
+            {
+
+            }
+            else if(action == BluetoothLeService.ACTION_DATA_ALERT_STATUS_NOTIFICATION) //경고용 알림
+            {
+
+            }
+        }
+    };
+
+
+    private BluetoothAdapter.LeScanCallback mLeScanCallback = new BluetoothAdapter.LeScanCallback() {
+        @Override
+        public void onLeScan(BluetoothDevice device, int rssi, byte[] scanRecord)
+        {
+            //검색된 ble 디바이스중에서 등록된 디바이스가 존재 하면 ble 연결 리스트에
+            for (PlantData plantDevice : mDataList)
+            {
+                if(plantDevice.mDevice.getAddress() == device.getAddress())
+                {
+
+                }
+            }
+        }
+    };
 
     public static void print(String str)
     {
@@ -56,9 +136,16 @@ public class MainActivity extends Activity implements View.OnTouchListener, Adap
 
         mContext = getApplicationContext();
 
+        mHandler = new Handler();
+
+        InitBLE();
         InitData();
         InitGUI();
-        InitBLE();
+
+        //서비스 등록
+        Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
+        bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
+
     }
 
     private void InitBLE()
@@ -69,7 +156,9 @@ public class MainActivity extends Activity implements View.OnTouchListener, Adap
     private void InitData()
     {
         mPlantManager = new PlantsDataManager();    //init
-        mDataList = PlantsDataManager.mPlantsList;
+
+        mDataList = new ArrayList<PlantData>();     //디바이스 관리 리스트
+        PlantsDataManager.mPlantsList = mDataList;
 
         PlantsDataManager.mUUID = PhoneInfoManager.getUUID(this.mContext);   //setUUID;
         print("uuid: " + PlantsDataManager.mUUID);
@@ -83,44 +172,54 @@ public class MainActivity extends Activity implements View.OnTouchListener, Adap
         }
 
         //uuid 랑 초기 시간 입력
+        PlantsDataManager.mPlantDBAdapter = mDBAdapter; //글로벌 변수 등록
+
         mDBAdapter.createPhoneInfo(PlantsDataManager.mUUID, 0, PhoneInfoManager.getTime());
         print(mDBAdapter.getPhoneInfo());
 
-
-        //text data
-        PlantData data = new PlantData();
-        data.mGoalHumidity = 60;
-        data.mGoalTemperatureMin = 20;
-        data.mGoalTemperatureMax = 25;
-        data.mGoalLuxMin = 2000;
-        data.mGoalLuxMax = 4000;
-
-        data.mLastedHumidity = 80;
-        data.mLastedLux = 8500;
-        data.mLastedTemperature = 20;
-
-        data.mPlantName = "TEST";
-        data.mPlantNum = 0;
-
-        mDataList.add(data);
-
-
-        data = new PlantData();
-        data.mGoalHumidity = 60;
-        data.mGoalTemperatureMin = 20;
-        data.mGoalTemperatureMax = 25;
-        data.mGoalLuxMin = 2000;
-        data.mGoalLuxMax = 4000;
-
-        data.mLastedHumidity = 50;
-        data.mLastedLux = 3000;
-        data.mLastedTemperature = 15;
-
-        data.mPlantName = "TEST";
-        data.mPlantNum = 0;
-
-        mDataList.add(data);
     }
+
+    private void updateDeviceList()
+    {
+        print("updateDeviceList");
+
+        ArrayList<PlantData> list = mDBAdapter.getPlantDeviceListFromDB();  //DB에서 디바이스 정보 읽어 들이기
+
+        if(list != null)
+        {
+            for (PlantData data : list)
+            {
+                mDataList.add(data);
+            }
+        }
+    }
+
+    private void connectDeviceList()
+    {
+        if(mBluetoothLeService != null)
+        {
+            for (PlantData plantDevice : mDataList)
+            {
+                final boolean result = mBluetoothLeService.connect(plantDevice);  //디바이스 연결
+                Log.d(TAG, "Connect request result=" + result);
+            }
+        }
+    }
+
+    @Override
+    protected void onResume()
+    {
+        print("onResume");
+        super.onResume();
+
+        mDataList.clear();
+        updateDeviceList(); //리스트 초기화 후 다시 재 갱신 //추가되는 디바이스가 존재 할 수 있으므로
+
+        //디바이스 연결 시도
+        connectDeviceList();
+
+    }
+
 
     private void InitGUI()
     {
