@@ -6,6 +6,8 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattDescriptor;
+import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
@@ -240,6 +242,38 @@ public class BluetoothLeService extends Service {
     {
         data.mBleGatt.close();
         data.mBleGatt = null;
+    }
+
+    //노티피 케이션 설정
+    public void SetNotification(PlantData plant)
+    {
+        BluetoothGattService sensingService = plant.mBleGatt.getService(UUID.fromString(GattAttributes.SENSING_SERVICE));   //get a sensing service
+
+        //get a sensingCharacteristic
+        BluetoothGattCharacteristic sensingDataCharacteristic = sensingService.getCharacteristic(UUID.fromString(GattAttributes.SENSING_DATA_MEASUREMENT));
+
+        if(sensingDataCharacteristic == null)
+        {
+            Log.d(TAG, "Not found characteristic : Data Measurement");
+            return;
+        }
+
+        //mBleGatt.readCharacteristic(sensingDataCharacteristic);
+        boolean notificationRegistered = plant.mBleGatt.setCharacteristicNotification(sensingDataCharacteristic, true);
+
+        if(notificationRegistered){
+            BluetoothGattDescriptor descriptor = sensingDataCharacteristic.getDescriptor(UUID.fromString(GattAttributes.CLIENT_CHARACTERISTIC_CONFIG));
+            descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+            plant.mBleGatt.writeDescriptor(descriptor);
+
+            Log.d(TAG,"set notification success");
+        }
+        else
+        {
+            Log.d(TAG, "Can not setup the notification");
+            return;
+        }
+        Log.d(TAG, "set notification complete");
     }
 
 

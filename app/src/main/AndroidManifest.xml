@@ -41,7 +41,7 @@
 
         </activity>
 
-
+        <service android:name="kr.ac.sch.cglab.plantmonitor.BLE.BluetoothLeService" android:enabled="true" />
     </application>
 
 </manifest>

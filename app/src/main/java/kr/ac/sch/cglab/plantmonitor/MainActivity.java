@@ -3,6 +3,9 @@ package kr.ac.sch.cglab.plantmonitor;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattDescriptor;
+import android.bluetooth.BluetoothGattService;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -20,8 +23,10 @@ import android.widget.ListView;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.UUID;
 
 import kr.ac.sch.cglab.plantmonitor.BLE.BluetoothLeService;
+import kr.ac.sch.cglab.plantmonitor.BLE.GattAttributes;
 import kr.ac.sch.cglab.plantmonitor.Data.PhoneInfoManager;
 import kr.ac.sch.cglab.plantmonitor.Data.PlantDBAdapter;
 import kr.ac.sch.cglab.plantmonitor.Data.PlantData;
@@ -29,7 +34,7 @@ import kr.ac.sch.cglab.plantmonitor.Data.PlantsDataManager;
 import kr.ac.sch.cglab.plantmonitor.NewPlant.AddPlantActivity;
 
 
-public class MainActivity extends Activity implements View.OnTouchListener, AdapterView.OnItemClickListener {
+public class MainActivity extends Activity implements View.OnTouchListener, AdapterView.OnItemClickListener, Runnable {
     private final String TAG = MainActivity.class.getSimpleName();
 
     private Context mContext;
@@ -44,6 +49,10 @@ public class MainActivity extends Activity implements View.OnTouchListener, Adap
 
     public PlantDBAdapter mDBAdapter;
 
+    //therad
+    private boolean mControlThreadLoop = false;
+    private Thread mThread;
+
     //ble
     private BluetoothAdapter mBleAdapter;
     private BluetoothLeService mBluetoothLeService = null;
@@ -54,17 +63,22 @@ public class MainActivity extends Activity implements View.OnTouchListener, Adap
         @Override
         public void onServiceConnected(ComponentName name, IBinder service)
         {
+            print("onServiceConnected");
             mBluetoothLeService = ((BluetoothLeService.LocalBinder)service).getService();
             if (!mBluetoothLeService.initialize()) {
                 Log.e(TAG, "Unable to initialize Bluetooth");
                 finish();
+            }else
+            {
+                print("mBluetoothLeService is okay");
+                connectDeviceList();
             }
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name)
         {
-            mBluetoothLeService = null;
+            //mBluetoothLeService = null;
         }
     };
 
@@ -142,10 +156,29 @@ public class MainActivity extends Activity implements View.OnTouchListener, Adap
         InitData();
         InitGUI();
 
+
+        print("ready to register service");
         //서비스 등록
         Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
         bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
 
+        mThread = new Thread(this);
+
+        //쓰레드 시작
+        startThread();
+    }
+
+    private void startThread()
+    {
+        print("startThread");
+        //쓰레드 시작
+        if(!mControlThreadLoop)
+        {
+
+            print("startThread start");
+            mThread.start();
+            mControlThreadLoop = true;  //쓰레드 제어 변수 설정
+        }
     }
 
     private void InitBLE()
@@ -196,6 +229,9 @@ public class MainActivity extends Activity implements View.OnTouchListener, Adap
 
     private void connectDeviceList()
     {
+        print("connectDeviceList");
+
+
         if(mBluetoothLeService != null)
         {
             for (PlantData plantDevice : mDataList)
@@ -204,20 +240,25 @@ public class MainActivity extends Activity implements View.OnTouchListener, Adap
                 Log.d(TAG, "Connect request result=" + result);
             }
         }
+        else{
+            print("connectDeviceList : does not init mBluetoothLeService");
+        }
     }
 
     @Override
-    protected void onResume()
-    {
+    protected void onResume() {
         print("onResume");
         super.onResume();
 
         mDataList.clear();
         updateDeviceList(); //리스트 초기화 후 다시 재 갱신 //추가되는 디바이스가 존재 할 수 있으므로
+    }
 
-        //디바이스 연결 시도
-        connectDeviceList();
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
 
+        mControlThreadLoop = false; //쓰레드 종료
     }
 
 
@@ -256,8 +297,36 @@ public class MainActivity extends Activity implements View.OnTouchListener, Adap
 
 
 
+    @Override
+    public void run()
+    {
+        int notificationTimeout = 1000;
+        while (mControlThreadLoop)  //루프 돌면서 서비스 오청
+        {
+            try {
+                Thread.sleep(notificationTimeout);
+                CheckAndSetNotificationStatus();    //디바이스 노티피 케이션 등록
 
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 
-
-
+    private void CheckAndSetNotificationStatus()
+    {
+        for (PlantData plant : mDataList)   //저장된 디바이스 중에서 통신 가능한 애들은
+        {
+            if(plant.mBleGatt != null)      //gatt server 에 연결 되었으면
+            {
+                mBluetoothLeService.SetNotification(plant); //노티피케이션 설정
+                print("CheckAndSetNotificationStatus");
+            }
+            else    //연결이 안되어 있으면 연결 수행
+            {
+                //디바이스 연결 시도
+                //connectDeviceList();
+            }
+        }
+    }
 }
